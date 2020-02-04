@@ -1,0 +1,8 @@
+.login_title {margin: 40px 0px; text-align: center;}
+.login_text {margin: 0 40px 6px;}
+.login_text_naver {margin: 6px 40px; padding-top: 12px; text-align: center;}
+.login_text_a {margin: 0 40px 6px; padding-bottom: 12px; text-align: center;}
+.login_text_p {margin-right:40px; margin-left:40px; margin-top: 16px; text-align: center;}
+.login_btn {margin: 10px 40px 30px;}
+.login_btn button {width: 100%;}
+.login_hr { margin: 0px 40px; background-color: #dbdbdb; height: 1px;}

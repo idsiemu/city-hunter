@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/signup.css}">
+    <title>회원가입</title>
+</head>
+<body>
+<div>
+    <h2 class="signup_title">회원가입</h2>
+    <div>
+        <form action="./signup" method="POST">
+            <div class="signup_btn">
+                <button class="btn btn-success" type="button">네이버로 로그인</button>
+            </div>
+            <div class="signup_hr"></div>
+            <div class="signup_text">
+                <input type="email" placeholder="이메일" class="form-control" name="email" />
+            </div>
+            <div class="signup_text">
+                <input type="text" placeholder="성명" class="form-control" name="name" />
+            </div>
+            <div class="signup_text">
+                <input type="text" placeholder="사용자 아이디" class="form-control" name="id" />
+            </div>
+            <div class="signup_text">
+                <input type="password" placeholder="비밀번호" class="form-control" name="password" />
+            </div>
+            <div class="signup_text">
+                <input type="password" placeholder="비밀번호 확인" class="form-control" name="confirm_password" />
+            </div>
+            <div class="signup_btn">
+                <button class="btn btn-success" type="submit">가입</button>
+            </div>
+        </form>
+        <div class="signup_text_p">
+            <P>
+                계정이 있으신가요?
+                <a href="/login">로그인</a>
+            </P>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>시티헌터</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/index.css}">
+    <script th:src="@{/js/bootstrap.min.js}"></script>
+</head>
+<body>
+<div>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="profile">
+            <a class="navbar-brand" href="#"><img th:src="@{/images/iconmonstr-user-circle-thin-240.png}"></a>
+        </div>
+        <div class="search">
+            <input class="form-control mr-sm-2" type="text" placeholder="장소 검색">
+        </div>
+        <div class="burger">
+            <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+        <div class="navbar-collapse collapse" id="navbarColor02" style="">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Features</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Pricing</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">About</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div>
+        <img style="max-width: 100%" src="https://navermaps.github.io/android-map-sdk/assets/2-3-basic.png" />
+    </div>
+    <footer style="display: flex;">
+        <div class="footer_item">
+            <a>
+                <img th:src="@{/images/iconmonstr-bus-32.png}">
+            </a>
+        </div>
+        <div class="footer_item">
+            <a>
+                <img th:src="@{/images/iconmonstr-car-32.png}">
+            </a>
+        </div>
+        <div class="footer_item">
+            <a>
+                <img th:src="@{/images/iconmonstr-location-32.png}">
+            </a>
+        </div>
+    </footer>
+</div>
+</body>
+</html>
