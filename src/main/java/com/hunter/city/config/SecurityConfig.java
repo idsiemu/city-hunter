@@ -8,10 +8,12 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -35,15 +37,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	protected void configure(HttpSecurity http) throws Exception {
 		http.csrf().disable();
 		http.cors().disable();
-		http.authorizeRequests()
-		.antMatchers("/", "/user/**", "/follow/**", "/image/**")
+		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+		//.addFilter()
+		.authorizeRequests()
+		.antMatchers("/","/index")
 		.authenticated()
-		.anyRequest()
-		.permitAll()
 		.and()
 		.formLogin()
 		.loginPage("/login")
-		.loginProcessingUrl("/auth/loginProc")
+		.loginProcessingUrl("/loginProc")
 		.successHandler(new AuthenticationSuccessHandler() {
 			
 			@Override
@@ -51,7 +53,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                                                 Authentication authentication) throws IOException, ServletException {
 				response.sendRedirect("/");
 			}
-		});
+		}).and().logout().logoutRequestMatcher(new AntPathRequestMatcher("/logout")).logoutSuccessUrl("/login");
 	}
 	
 	@Autowired

@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 
 public interface UserRepository extends JpaRepository<User, Integer> {
-	User findByUsername(String username);
-	
-	User findByProviderAndProviderId(String provider, String providerId);
+	int countByUsername(String username);
+
+	int countByEmail(String email);
+
+	boolean existsByUsernameAndPassword(String username, String password);
 }

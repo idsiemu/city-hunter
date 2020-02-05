@@ -1,68 +1,50 @@
 package com.hunter.city.service;
 
+import com.hunter.city.model.User;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
-import java.security.Key;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+
 
 @Service
 public class JWTService {
     // application.properties 에 secret 설정, 대충 원하는 문자열 10~20글자정도?
     @Value("${security.jwt.token.secret-key}")
     private String secret;
-    /**
-     * body 가 들어간 토큰 생성
-     * 
-     * @param body
-     * @param expired 토근 만료 시간
-     * @return
-     */
-    public String token(Map<String, Object> body, Optional<LocalDateTime> expired) {
-        byte[] apiKeySecretBytes = DatatypeConverter.parseBase64Binary(secret);
 
-        Key key = new SecretKeySpec(apiKeySecretBytes, SignatureAlgorithm.HS512.getJcaName());
+    public String createToken(User user) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put("typ", "JWT");
+        headers.put("alg", "HS256");
 
-        JwtBuilder builder = Jwts.builder().setClaims(body)
-                .setExpiration(Timestamp.valueOf(LocalDateTime.now().plusDays(1)))
-                .signWith(SignatureAlgorithm.HS512, key);
+        Map<String, Object> payloads = new HashMap<>();
+        long expiredTime = 1000*60;
+        Date now = new Date();
+        now.setTime(now.getTime() + expiredTime);
+        payloads.put("username", user.getUsername());
 
-        // 만료시간을 설정할 경우 expir 설정
-        expired.ifPresent(exp -> {
-            builder.setExpiration(Timestamp.valueOf(exp));
-        });
-
-        return builder.compact();
+        String jwt = Jwts.builder()
+                .setHeader(headers)
+                .setClaims(payloads)
+                .signWith(SignatureAlgorithm.HS256, secret.getBytes())
+                .compact();
+        return jwt;
     }
 
-    /**
-     * 기본 만료시간 : 하루 30분 : LocalDateTime.now().plusMinutes(30) 1시간 :
-     * LocalDateTime.now().plusHours(1)
-     * 
-     * @param body
-     * @return
-     */
-    public String token(Map<String, Object> body) {
-        return token(body, Optional.of(LocalDateTime.now().plusDays(1)));
-    }
-
-    /**
-     * 토큰 검증후 저장된 값 복원
-     */
-    public Map<String, Object> verify(String token) {
-        Claims claims = Jwts.parser().setSigningKey(DatatypeConverter.parseBase64Binary(secret)).parseClaimsJws(token)
+    public String verify(String jwt) throws InterruptedException{
+        Claims claims = Jwts.parser()
+                .setSigningKey(secret.getBytes())
+                .parseClaimsJws(jwt)
                 .getBody();
 
-        return new HashMap<>(claims);
+        String username = claims.get("username", String.class);
+        return username;
     }
+
 }

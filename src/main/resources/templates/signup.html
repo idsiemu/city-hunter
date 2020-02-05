@@ -5,31 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}">
     <link rel="stylesheet" type="text/css" th:href="@{/css/signup.css}">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous"></script>
     <title>회원가입</title>
 </head>
+<script>
+    window.onload = function () {
+
+    }
+    function checkEmail() {
+        const email = document.getElementById("email").value;
+        if(email.length > 0){
+            $.ajax({
+                type: "POST",
+                url: "/checkEmail",
+                data: "email="+email,
+                dataType:"json",
+                success: function (data) {
+                    if(data == 1) {
+                        document.getElementById("email").classList.remove("is-invalid");
+                        document.getElementById("email").classList.add("is-valid");
+                    } else if(data == 0) {
+                        document.getElementById("email").classList.remove("is-valid");
+                        document.getElementById("email").classList.add("is-invalid");
+                    }
+                },
+                error: function (xhr,err){
+                    alert("관리자에게 문의하세요.");
+                }
+            });
+        }else{
+            document.getElementById("email").classList.remove("is-invalid");
+            document.getElementById("email").classList.remove("is-valid");
+        }
+    }
+
+    function checkUsername() {
+        const username = document.getElementById("username").value;
+        if(username.length > 0){
+            $.ajax({
+                type: "POST",
+                url: "/checkUsername",
+                data: "username"+username,
+                dataType:"json",
+                success: function (data) {
+                    if(data == 1) {
+                        document.getElementById("username").classList.remove("is-invalid");
+                        document.getElementById("username").classList.add("is-valid");
+                    } else if(data == 0) {
+                        document.getElementById("username").classList.remove("is-valid");
+                        document.getElementById("username").classList.add("is-invalid");
+                    }
+                },
+                error: function (xhr,err){
+                    alert("관리자에게 문의하세요.");
+                }
+            });
+        }else{
+            document.getElementById("username").classList.remove("is-invalid");
+            document.getElementById("username").classList.remove("is-valid");
+        }
+    }
+</script>
 <body>
 <div>
     <h2 class="signup_title">회원가입</h2>
     <div>
-        <form action="./signup" method="POST">
+        <form th:action="@{/signupProc}" method="POST">
             <div class="signup_btn">
                 <button class="btn btn-success" type="button">네이버로 로그인</button>
             </div>
             <div class="signup_hr"></div>
             <div class="signup_text">
-                <input type="email" placeholder="이메일" class="form-control" name="email" />
+                <input type="email" placeholder="이메일" class="form-control" name="email" id="email" required="required" onfocusout="checkEmail();"/>
+                <div class="invalid-feedback">이미 사용중인 이메일입니다.</div>
+                <div class="valid-feedback">사용가능합니다.</div>
             </div>
             <div class="signup_text">
-                <input type="text" placeholder="성명" class="form-control" name="name" />
+                <input type="text" placeholder="사용자 아이디" class="form-control" name="username" id="username" required="required" onfocusout="checkUsername();"/>
+                <div class="invalid-feedback">이미 사용중인 아이디입니다.</div>
+                <div class="valid-feedback">사용가능합니다.</div>
             </div>
             <div class="signup_text">
-                <input type="text" placeholder="사용자 아이디" class="form-control" name="id" />
+                <input type="text" placeholder="성명" class="form-control" name="name" required="required"/>
             </div>
             <div class="signup_text">
-                <input type="password" placeholder="비밀번호" class="form-control" name="password" />
+                <input type="password" placeholder="비밀번호" class="form-control" name="password" required="required"/>
             </div>
             <div class="signup_text">
-                <input type="password" placeholder="비밀번호 확인" class="form-control" name="confirm_password" />
+                <input type="password" placeholder="비밀번호 확인" class="form-control" name="confirm_password" required="required"/>
             </div>
             <div class="signup_btn">
                 <button class="btn btn-success" type="submit">가입</button>
@@ -38,7 +103,7 @@
         <div class="signup_text_p">
             <P>
                 계정이 있으신가요?
-                <a href="/login">로그인</a>
+                <a th:href="@{~/login}">로그인</a>
             </P>
         </div>
     </div>
