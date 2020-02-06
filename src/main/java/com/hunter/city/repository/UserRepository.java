@@ -9,5 +9,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
 	int countByEmail(String email);
 
+	User findByUsername(String username);
+
 	boolean existsByUsernameAndPassword(String username, String password);
 }

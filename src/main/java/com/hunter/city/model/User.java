@@ -1,15 +1,19 @@
 package com.hunter.city.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Data //lombok
 @Entity //JPA -> ORM
+@NoArgsConstructor
 public class User {
 
     @Id
@@ -49,14 +53,27 @@ public class User {
     @Column(length = 50)
     private String providerId;
 
+    private int active;
+
+    @Column(length = 32)
+    private String roles;
+
     @CreationTimestamp // 자동으로 현재 시간이 세팅
     private Timestamp createDate;
     @CreationTimestamp // 자동으로 현재 시간이 세팅
     private Timestamp updateDate;
 
-    @Builder
-    public User(String username, String password) {
+    public User(String username, String password, String roles){
         this.username = username;
         this.password = password;
+        this.roles = roles;
+        this.active = 1;
+    }
+
+    public List<String> getRoleList(){
+        if(this.roles.length() > 0){
+            return Arrays.asList(this.roles.split(","));
+        }
+        return new ArrayList<>();
     }
 }

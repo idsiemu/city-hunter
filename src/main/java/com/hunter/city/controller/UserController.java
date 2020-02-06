@@ -4,7 +4,7 @@ import com.hunter.city.model.User;
 import com.hunter.city.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,21 +16,18 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class UserController {
 
     @Autowired
-    private BCryptPasswordEncoder encoder;
+    private PasswordEncoder encoder;
 
     @Autowired
     private UserRepository userRepository;
 
-    @GetMapping("/")
-    public String indexPage() {
-        return "/index";
+    @GetMapping("main")
+    public void mainPage() {
     }
 
     @GetMapping("signup")
     public void signupPage() {
     }
-
-
 
     @PostMapping("checkEmail")
     @ResponseBody
@@ -55,6 +52,7 @@ public class UserController {
         String rawPassword = user.getPassword();
         String encPassword = encoder.encode(rawPassword);
         user.setPassword(encPassword);
+        user.setRoles("USER");
 
         userRepository.save(user);
         return "redirect:/login";
@@ -64,11 +62,8 @@ public class UserController {
     public void loginPage() {
     }
 
-
-
-    @PostMapping("loginProc")
-    public String loginProc(User user) {
-
-        return "redirect:/index";
-    }
+//    @PostMapping("login")
+//    public String loginProc() {
+//        return "redirect:/main";
+//    }
 }

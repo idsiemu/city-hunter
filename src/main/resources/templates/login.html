@@ -3,42 +3,80 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+            crossorigin="anonymous"></script>
     <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}">
     <link rel="stylesheet" type="text/css" th:href="@{/css/login.css}">
     <title>로그인</title>
 </head>
+<script>
+    window.onload = function () {
+        // const error = window.location.search;
+        // if(error.length > 0){
+        //     document.getElementsByClassName("invalid-feedback")[0].style.display = "block";
+        // }else{
+        //     document.getElementsByClassName("invalid-feedback")[0].style.display = "none";
+        // }
+    }
+    function login() {
+        const formData = new FormData();
+        formData.append("username", document.getElementById("username").value);
+        formData.append("password", document.getElementById("password").value);
+        $.ajax({
+            type: "POST",
+            url: "/login",
+            data: formData,
+            processData : false,
+            contentType : false,
+            success: function (data) {
+                console.log(data);
+                if(data == 1) {
+                    location.href="/main"
+                } else if(data == 0) {
+                    document.getElementsByClassName("invalid-feedback")[0].style.display = "block";
+                } else {
+                    alert("관리자에게 문의하세요.");
+                }
+            },
+            error: function (xhr,err){
+                alert("관리자에게 문의하세요.");
+            }
+        });
+    }
+</script>
 <body>
 <div>
     <h2 class="login_title">로그인</h2>
     <div>
-        <form action="./login" method="POST">
-            <div class="login_text">
-                <input type="text" placeholder="이메일" class="form-control" name="id" />
+        <div class="login_text">
+            <input type="text" placeholder="아이디" class="form-control" name="username" id="username" required="required"/>
+        </div>
+        <div class="login_text">
+            <input type="password" placeholder="비밀번호" class="form-control" name="password" id="password" required="required"/>
+        </div>
+        <div class="login_text">
+            <div class="invalid-feedback">가입하지 않은 아이디이거나, 잘못된 비밀번호입니다.</div>
+        </div>
+        <div class="login_btn">
+            <button class="btn btn-success" onclick="login();" type="button">로그인</button>
+        </div>
+        <div class="login_hr"></div>
+        <div>
+            <div class="login_text_naver">
+                <a href="#">네이버</a>로 로그인
             </div>
-            <div class="login_text">
-                <input type="password" placeholder="비밀번호" class="form-control" name="pwd" />
+            <div class="login_text_a">
+                <a href="#">비밀번호를 잊으셧나요?</a>
             </div>
-
-            <div class="login_btn">
-                <button class="btn btn-success" type="submit">로그인</button>
-            </div>
-            <div class="login_hr"></div>
-            <div>
-                <div class="login_text_naver">
-                    <a href="#">네이버</a>로 로그인
-                </div>
-                <div class="login_text_a">
-                    <a href="#">비밀번호를 잊으셧나요?</a>
-                </div>
-            </div>
-            <div class="login_hr"></div>
-            <div class="login_text_p">
-                <P>
-                    계정이 없으신가요?
-                    <a href="/signup">가입하기</a>
-                </P>
-            </div>
-        </form>
+        </div>
+        <div class="login_hr"></div>
+        <div class="login_text_p">
+            <P>
+                계정이 없으신가요?
+                <a th:href="@{~/signup}">가입하기</a>
+            </P>
+        </div>
     </div>
 </div>
 
