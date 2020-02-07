@@ -11,11 +11,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 import static com.auth0.jwt.algorithms.Algorithm.HMAC512;
@@ -35,11 +37,10 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     @SneakyThrows
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
-
+        log.info("로그인 실행");
         // Grab credentials and map them to login viewmodel
         try {
             // Create login token
-            log.info("토큰 생성 하러감");
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                     request.getParameter("username"),
                     request.getParameter("password"),
@@ -47,10 +48,8 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
             // Authenticate user
             Authentication auth = authenticationManager.authenticate(authenticationToken);
-            log.info("토큰 생성 에러?");
             return auth;
         } catch (Exception e) {
-            e.printStackTrace();
             PrintWriter out = response.getWriter();
             out.println(0);
         }
@@ -71,6 +70,9 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         // Add token in response
         PrintWriter out = response.getWriter();
         out.println(1);
-        response.addHeader(JwtProperties.HEADER_STRING, JwtProperties.TOKEN_PREFIX +  token);
+        Cookie cookie = new Cookie(JwtProperties.HEADER_STRING, JwtProperties.TOKEN_PREFIX +  token);
+        cookie.setMaxAge(JwtProperties.EXPIRATION_TIME);
+        cookie.setPath("/");
+        response.addCookie(cookie);
     }
 }

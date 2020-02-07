@@ -12,12 +12,7 @@
 </head>
 <script>
     window.onload = function () {
-        // const error = window.location.search;
-        // if(error.length > 0){
-        //     document.getElementsByClassName("invalid-feedback")[0].style.display = "block";
-        // }else{
-        //     document.getElementsByClassName("invalid-feedback")[0].style.display = "none";
-        // }
+
     }
     function login() {
         const formData = new FormData();
@@ -30,13 +25,10 @@
             processData : false,
             contentType : false,
             success: function (data) {
-                console.log(data);
-                if(data == 1) {
-                    location.href="/main"
-                } else if(data == 0) {
+                if(data == 0) {
                     document.getElementsByClassName("invalid-feedback")[0].style.display = "block";
                 } else {
-                    alert("관리자에게 문의하세요.");
+                    location.href = "/main";
                 }
             },
             error: function (xhr,err){
