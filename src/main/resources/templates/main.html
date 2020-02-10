@@ -3,12 +3,282 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=279826e384548af3dcc55dae17451e73&libraries=services"></script>
     <title>시티헌터</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}">
     <link rel="stylesheet" type="text/css" th:href="@{/css/index.css}">
     <script th:src="@{/js/bootstrap.min.js}"></script>
 </head>
+<script>
+window.onload = function () {
+//****************************************************************************************************************
+// Init 시작
+// ***************************************************************************************************************
+    let hunterMarkers = [];
+
+    let searchMarks = [];
+
+    let map = generateMap();
+
+    const infowindow = new kakao.maps.InfoWindow({zIndex:1});
+
+    // 주소-좌표 변환 객체를 생성합니다
+    const geocoder = new kakao.maps.services.Geocoder();
+
+    // 장소 검색 객체를 생성합니다
+    const ps = new kakao.maps.services.Places();
+//****************************************************************************************************************
+// Init 끝
+// ***************************************************************************************************************
+//****************************************************************************************************************
+// Action 시작
+// ***************************************************************************************************************
+    $('#keyword').on('keydown', function(e) {
+        var keyCode = e.which;
+        if (keyCode === 13) { // Enter Key
+            searchMarks = [];
+            // 키워드로 장소를 검색합니다
+            ps.keywordSearch(document.getElementById("keyword").value, placesSearchCB);
+
+            // 주소로 좌표를 검색합니다
+            geocoder.addressSearch(document.getElementById("keyword").value, function(result, status) {
+                // 정상적으로 검색이 완료됐으면
+                if (status === kakao.maps.services.Status.OK) {
+                    const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+                    // 결과값으로 받은 위치를 마커로 표시합니다
+                    searchMarks.push(generateMarkerByJuso(coords));
+                    // 인포윈도우로 장소에 대한 설명을 표시합니다
+                    // var infowindow = new kakao.maps.InfoWindow({
+                    //     content: '<div style="width:150px;text-align:center;padding:6px 0;">우리회사</div>'
+                    // });
+                    // infowindow.open(map, marker);
+
+                    // 지도의 중심을 결과값으로 받은 위치로 이동시킵니다
+                    map.setCenter(coords);
+                }
+            });
+        }
+    });
+
+    kakao.maps.event.addListener(map, 'click', function() {
+        for(let i=0;i<hunterMarkers.length;i++){
+            console.log(0);
+            hunterMarkers[i].setImage(markerImage());
+        }
+        console.log(searchMarks.length);
+        for(let i=0;searchMarks.length;i++){
+            console.log(searchMarks);
+            searchMarks[i].setImage(markerImage());
+        }
+    });
+//****************************************************************************************************************
+// Action 끝
+// ***************************************************************************************************************
+    function generateMap() {
+        // map tag 생성
+        const cell = document.getElementById("control_map");
+        while ( cell.hasChildNodes() ) { cell.removeChild( cell.firstChild ); }
+        const div = document.createElement("div");
+        div.id = "map";
+        div.style.width = "100%";
+        div.style.height = "400px";
+        document.getElementById('control_map').appendChild(div);
+
+        // 지도를 표시할 div
+        const mapContainer = document.getElementById('map'),
+            mapOption = {
+                center: new kakao.maps.LatLng(37.54699, 127.09598), // 지도의 중심좌표
+                level: 20 // 지도의 확대 레벨
+            };
+
+        const map = new kakao.maps.Map(mapContainer, mapOption); // 지도를 생성합니다
+
+        // 마커가 지도 위에 표시되도록 설정합니다
+        const marker = generateHunterMarker();
+        marker.setMap(map)
+        hunterMarkers.push(marker);
+
+        return map;
+    }
+    function generateHunterMarker(){
+        let markerPosition = new kakao.maps.LatLng(37.54699, 127.09598); // 마커가 표시될 위치입니다
+
+        // 마커를 생성합니다
+        let marker = new kakao.maps.Marker({
+            // map,
+            position: markerPosition,
+            image: markerImage() // 마커이미지 설정
+        });
+
+        // 마커에 클릭이벤트를 등록합니다
+        // 마커에 mouseover 이벤트를 등록합니다
+        kakao.maps.event.addListener(marker, 'mouseover', function() {
+            marker.setImage(markerImage(42));
+        });
+
+        // 마커에 mouseout 이벤트를 등록합니다
+        kakao.maps.event.addListener(marker, 'mouseout', function() {
+            marker.setImage(markerImage());
+        });
+
+        // 마커에 click 이벤트를 등록합니다
+        kakao.maps.event.addListener(marker, 'click', function() {
+            marker.setImage(markerImage(42));
+            // 마커가 드래그 가능하도록 설정합니다
+            marker.setDraggable(true);
+        });
+
+        return marker;
+    }
+    function generateMarkerByClick(place){
+        let markerPosition = null;
+        if(place === null || place ===undefined){
+            markerPosition = new kakao.maps.LatLng(37.54699, 127.09598); // 마커가 표시될 위치입니다
+        }else {
+            markerPosition = new kakao.maps.LatLng(place.x, place.y);
+        }
+
+        // 마커를 생성합니다
+        let marker = new kakao.maps.Marker({
+            // map,
+            position: markerPosition,
+            image: markerImage() // 마커이미지 설정
+        });
+
+        // 마커가 드래그 가능하도록 설정합니다
+        marker.setDraggable(true);
+
+        // 마커에 클릭이벤트를 등록합니다
+        markerClick(marker, place);
+
+        return marker;
+    }
+
+    function generateMarkerByJuso(coords){
+        let markerPosition = null;
+        if(coords !== null){
+
+            // 마커를 생성합니다
+            let marker = new kakao.maps.Marker({
+                map,
+                position: coords,
+                image: markerImage() // 마커이미지 설정
+            });
+
+            // 마커가 드래그 가능하도록 설정합니다
+            marker.setDraggable(true);
+
+            // 마커에 클릭이벤트를 등록합니다
+            kakao.maps.event.addListener(marker, 'click', function() {
+                // 마커를 클릭하면 장소명이 인포윈도우에 표출됩니다
+                infowindow.setContent('<div style="font-size:12px;">' + place.place_name + '</div>');
+                infowindow.open(map, marker);
+            });
+            const result = geocoder.coord2Address(coords.getLng(), coords.getLat(), function (result, status) {
+                if (status === kakao.maps.services.Status.OK) {
+                    var detailAddr = !!result[0].road_address ? '<div>도로명주소 : ' + result[0].road_address.address_name + '</div>' : '';
+                    detailAddr += '<div>지번 주소 : ' + result[0].address.address_name + '</div>';
+                    console.log(detailAddr);
+                }
+            });
+
+            // 마커에 클릭이벤트를 등록합니다
+            // 마커에 mouseover 이벤트를 등록합니다
+            kakao.maps.event.addListener(marker, 'mouseover', function() {
+                marker.setImage(markerImage(42));
+            });
+
+            // 마커에 mouseout 이벤트를 등록합니다
+            kakao.maps.event.addListener(marker, 'mouseout', function() {
+                marker.setImage(markerImage());
+            });
+
+            // 마커에 click 이벤트를 등록합니다
+            kakao.maps.event.addListener(marker, 'click', function() {
+                marker.setImage(markerImage(42));
+                // 마커가 드래그 가능하도록 설정합니다
+                marker.setDraggable(true);
+            });
+            return marker;
+        }else {
+            return;
+        }
+
+
+    }
+
+    function generateMarkerByKeyWord(place){
+        let markerPosition = null;
+        if(place !== null){
+            markerPosition = new kakao.maps.LatLng(place.y, place.x);
+
+            // 마커를 생성합니다
+            let marker = new kakao.maps.Marker({
+                map,
+                position: markerPosition,
+                image: markerImage() // 마커이미지 설정
+            });
+
+            // 마커에 클릭이벤트를 등록합니다
+            // 마커에 mouseover 이벤트를 등록합니다
+            kakao.maps.event.addListener(marker, 'mouseover', function() {
+                marker.setImage(markerImage(42));
+            });
+
+            // 마커에 mouseout 이벤트를 등록합니다
+            kakao.maps.event.addListener(marker, 'mouseout', function() {
+                marker.setImage(markerImage());
+            });
+
+            // 마커에 click 이벤트를 등록합니다
+            kakao.maps.event.addListener(marker, 'click', function() {
+                marker.setImage(markerImage(42));
+                // 마커가 드래그 가능하도록 설정합니다
+                marker.setDraggable(true);
+            });
+            return marker;
+        }else {
+            return;
+        }
+    }
+
+    // 키워드 검색 완료 시 호출되는 콜백함수 입니다
+    function placesSearchCB (data, status, pagination) {
+        if (status === kakao.maps.services.Status.OK) {
+            // 검색된 장소 위치를 기준으로 지도 범위를 재설정하기위해
+            // LatLngBounds 객체에 좌표를 추가합니다
+            const bounds = new kakao.maps.LatLngBounds();
+
+            for (let i=0; i<data.length; i++) {
+                searchMarks.push(generateMarkerByKeyWord(data[i]));
+                bounds.extend(new kakao.maps.LatLng(data[i].y, data[i].x));
+            }
+
+            // 검색된 장소 위치를 기준으로 지도 범위를 재설정합니다
+            map.setBounds(bounds);
+        }
+    }
+    
+    function markerImage(size) {
+        if(size == null){
+            const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-red-full-32.png', // 마커이미지의 주소입니다
+                imageSize = new kakao.maps.Size(32, 32), // 마커이미지의 크기입니다
+                imageOption = {offset: new kakao.maps.Point(20, 32)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
+            // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+            const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+            return markerImage;
+        } else {
+            const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-red-full-48.png', // 마커이미지의 주소입니다
+                imageSize = new kakao.maps.Size(size, size), // 마커이미지의 크기입니다
+                imageOption = {offset: new kakao.maps.Point(25, size)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
+            // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+            const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+            return markerImage;
+        }
+    }
+}
+</script>
 <body>
 <div>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -16,7 +286,7 @@
             <a class="navbar-brand" href="#"><img th:src="@{/images/iconmonstr-user-circle-thin-240.png}"></a>
         </div>
         <div class="search">
-            <input class="form-control mr-sm-2" type="text" placeholder="장소 검색">
+            <input class="form-control mr-sm-2" type="text" id="keyword" placeholder="장소 검색">
         </div>
         <div class="burger">
             <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,8 +307,9 @@
             </ul>
         </div>
     </nav>
-    <div>
-        <img style="max-width: 100%" src="https://navermaps.github.io/android-map-sdk/assets/2-3-basic.png" />
+    <div id="control_map">
+<!--        <div id="map" style="width:100%;height:400px;">-->
+<!--        </div>-->
     </div>
     <footer style="display: flex;">
         <div class="footer_item">
@@ -58,5 +329,227 @@
         </div>
     </footer>
 </div>
+<!--<script>-->
+<!--    const map = new naver.maps.Map("map", {-->
+<!--        center: new naver.maps.LatLng(37.3595316, 127.1052133),-->
+<!--        zoom: 10,-->
+<!--        mapTypeControl: true-->
+<!--    });-->
+
+<!--    let position =map.center;-->
+<!--    let marker = new naver.maps.Marker({-->
+<!--        position: position,-->
+<!--        map: map,-->
+<!--        icon: {-->
+<!--            url: '/images/iconmonstr-location-red-full-32.png', //50, 68 크기의 원본 이미지-->
+<!--            size: new naver.maps.Size(32, 32),-->
+<!--            scaledSize: new naver.maps.Size(32, 32),-->
+<!--            origin: new naver.maps.Point(0, 0),-->
+<!--            anchor: new naver.maps.Point(12, 34)-->
+<!--        }-->
+<!--    });-->
+
+<!--    function setMarker() {-->
+<!--        position = naver.maps.LatLng(map.x, map.y);-->
+<!--        marker.setPosition(position, map);-->
+<!--        return marker;-->
+<!--    }-->
+
+<!--    var infoWindow = new naver.maps.InfoWindow({-->
+<!--        anchorSkew: true-->
+<!--    });-->
+
+<!--    map.setCursor('pointer');-->
+
+<!--    function searchCoordinateToAddress(latlng) {-->
+
+<!--        infoWindow.close();-->
+
+<!--        naver.maps.Service.reverseGeocode({-->
+<!--            coords: latlng,-->
+<!--            orders: [-->
+<!--                naver.maps.Service.OrderType.ADDR,-->
+<!--                naver.maps.Service.OrderType.ROAD_ADDR-->
+<!--            ].join(',')-->
+<!--        }, function(status, response) {-->
+<!--            if (status === naver.maps.Service.Status.ERROR) {-->
+<!--                if (!latlng) {-->
+<!--                    return alert('ReverseGeocode Error, Please check latlng');-->
+<!--                }-->
+<!--                if (latlng.toString) {-->
+<!--                    return alert('ReverseGeocode Error, latlng:' + latlng.toString());-->
+<!--                }-->
+<!--                if (latlng.x && latlng.y) {-->
+<!--                    return alert('ReverseGeocode Error, x:' + latlng.x + ', y:' + latlng.y);-->
+<!--                }-->
+<!--                return alert('ReverseGeocode Error, Please check latlng');-->
+<!--            }-->
+
+<!--            var items = response.v2.results,-->
+<!--                address = '',-->
+<!--                htmlAddresses = [];-->
+
+<!--            for (var i=0, ii=items.length, item, addrType; i<ii; i++) {-->
+<!--                item = items[i];-->
+<!--                address = makeAddress(item) || '';-->
+<!--                addrType = item.name === 'roadaddr' ? '[도로명 주소]' : '[지번 주소]';-->
+<!--                console.log(i+1);-->
+<!--                console.log(addrType);-->
+<!--                console.log(address);-->
+<!--                htmlAddresses.push((i+1) +'. '+ addrType +' '+ address);-->
+<!--            }-->
+
+<!--            // infoWindow.setContent([-->
+<!--            //     '<div style="padding:10px;min-width:200px;line-height:150%;">',-->
+<!--            //     '<h4 style="margin-top:5px;">검색 좌표</h4><br />',-->
+<!--            //     htmlAddresses.join('<br />'),-->
+<!--            //     '</div>'-->
+<!--            // ].join('\n'));-->
+
+<!--            // infoWindow.open(map, latlng);-->
+<!--        });-->
+<!--    }-->
+
+<!--    function searchAddressToCoordinate(address) {-->
+<!--        naver.maps.Service.geocode({-->
+<!--            query: address-->
+<!--        }, function(status, response) {-->
+<!--            if (status === naver.maps.Service.Status.ERROR) {-->
+<!--                if (!address) {-->
+<!--                    return alert('Geocode Error, Please check address');-->
+<!--                }-->
+<!--                return alert('Geocode Error, address:' + address);-->
+<!--            }-->
+
+<!--            if (response.v2.meta.totalCount === 0) {-->
+<!--                return alert('No result.');-->
+<!--            }-->
+<!--            var htmlAddresses = [],-->
+<!--                item = response.v2.addresses[0],-->
+<!--                point = new naver.maps.Point(item.x, item.y);-->
+<!--            if (item.roadAddress) {-->
+<!--                console.log(item.roadAddress);-->
+<!--                htmlAddresses.push('[도로명 주소] ' + item.roadAddress);-->
+<!--            }-->
+
+<!--            if (item.jibunAddress) {-->
+<!--                console.log(item.jibunAddress);-->
+<!--                htmlAddresses.push('[지번 주소] ' + item.jibunAddress);-->
+<!--            }-->
+
+<!--            if (item.englishAddress) {-->
+<!--                console.log(item.englishAddress);-->
+<!--                htmlAddresses.push('[영문명 주소] ' + item.englishAddress);-->
+<!--            }-->
+
+<!--            // infoWindow.setContent([-->
+<!--            //     '<div style="padding:10px;min-width:200px;line-height:150%;">',-->
+<!--            //     '<h4 style="margin-top:5px;">검색 주소 : '+ address +'</h4><br />',-->
+<!--            //     htmlAddresses.join('<br />'),-->
+<!--            //     '</div>'-->
+<!--            // ].join('\n'));-->
+
+<!--            // map.setCenter(point);-->
+<!--            // infoWindow.open(map, point);-->
+<!--        });-->
+<!--    }-->
+
+<!--    function initGeocoder() {-->
+<!--        map.addListener('click', function(e) {-->
+<!--            setMarker().setPosition(e.coord);-->
+<!--            searchCoordinateToAddress(e.coord);-->
+<!--        });-->
+
+<!--        $('#address').on('keydown', function(e) {-->
+<!--            var keyCode = e.which;-->
+<!--            if (keyCode === 13) { // Enter Key-->
+<!--                searchAddressToCoordinate($('#address').val());-->
+<!--            }-->
+<!--        });-->
+
+<!--        $('#submit').on('click', function(e) {-->
+<!--            e.preventDefault();-->
+
+<!--            searchAddressToCoordinate($('#address').val());-->
+<!--        });-->
+<!--        searchAddressToCoordinate('정자동 178-1');-->
+<!--    }-->
+
+<!--    function makeAddress(item) {-->
+<!--        if (!item) {-->
+<!--            return;-->
+<!--        }-->
+
+<!--        var name = item.name,-->
+<!--            region = item.region,-->
+<!--            land = item.land,-->
+<!--            isRoadAddress = name === 'roadaddr';-->
+
+<!--        var sido = '', sigugun = '', dongmyun = '', ri = '', rest = '';-->
+
+<!--        if (hasArea(region.area1)) {-->
+<!--            sido = region.area1.name;-->
+<!--        }-->
+
+<!--        if (hasArea(region.area2)) {-->
+<!--            sigugun = region.area2.name;-->
+<!--        }-->
+
+<!--        if (hasArea(region.area3)) {-->
+<!--            dongmyun = region.area3.name;-->
+<!--        }-->
+
+<!--        if (hasArea(region.area4)) {-->
+<!--            ri = region.area4.name;-->
+<!--        }-->
+
+<!--        if (land) {-->
+<!--            if (hasData(land.number1)) {-->
+<!--                if (hasData(land.type) && land.type === '2') {-->
+<!--                    rest += '산';-->
+<!--                }-->
+
+<!--                rest += land.number1;-->
+
+<!--                if (hasData(land.number2)) {-->
+<!--                    rest += ('-' + land.number2);-->
+<!--                }-->
+<!--            }-->
+
+<!--            if (isRoadAddress === true) {-->
+<!--                if (checkLastString(dongmyun, '면')) {-->
+<!--                    ri = land.name;-->
+<!--                } else {-->
+<!--                    dongmyun = land.name;-->
+<!--                    ri = '';-->
+<!--                }-->
+
+<!--                if (hasAddition(land.addition0)) {-->
+<!--                    rest += ' ' + land.addition0.value;-->
+<!--                }-->
+<!--            }-->
+<!--        }-->
+<!--        return [sido, sigugun, dongmyun, ri, rest].join(' ');-->
+<!--    }-->
+
+<!--    function hasArea(area) {-->
+<!--        return !!(area && area.name && area.name !== '');-->
+<!--    }-->
+
+<!--    function hasData(data) {-->
+<!--        return !!(data && data !== '');-->
+<!--    }-->
+
+<!--    function checkLastString (word, lastString) {-->
+<!--        return new RegExp(lastString + '$').test(word);-->
+<!--    }-->
+
+<!--    function hasAddition (addition) {-->
+<!--        return !!(addition && addition.value);-->
+<!--    }-->
+<!--    initGeocoder();-->
+<!--    // naver.maps.onJSContentLoaded = initGeocoder;-->
+
+<!--</script>-->
 </body>
 </html>
