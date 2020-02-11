@@ -27,8 +27,12 @@
             success: function (data) {
                 if(data == 0) {
                     document.getElementsByClassName("invalid-feedback")[0].style.display = "block";
-                } else {
-                    location.href = "/main";
+                } else if(data == 1){
+                    // location.href = "/admin/main";
+                } else if(data == 2){
+                    location.href = "/customer";
+                } else if(data == 3){
+                    location.href = "/user";
                 }
             },
             error: function (xhr,err){

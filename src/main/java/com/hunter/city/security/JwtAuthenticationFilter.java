@@ -60,7 +60,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
         // Grab principal
         UserPrincipal principal = (UserPrincipal) authResult.getPrincipal();
-
         // Create JWT Token
         String token = JWT.create()
                 .withSubject(principal.getUsername())
@@ -69,7 +68,20 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
         // Add token in response
         PrintWriter out = response.getWriter();
-        out.println(1);
+        int authentication = 0;
+        for(int i=0;i<principal.getAuthorities().toArray().length;i++){
+            String getAuthority = principal.getAuthorities().toArray()[i].toString();
+            if(getAuthority.equals("ROLE_ADMIN")){
+                authentication = 1;
+            }else if(getAuthority.equals("ROLE_CUSTOMER")){
+                authentication = 2;
+            }else if(getAuthority.equals("ROLE_USER")){
+                authentication = 3;
+            }else{
+                authentication = 0;
+            };
+        }
+        out.println(authentication);
         Cookie cookie = new Cookie(JwtProperties.HEADER_STRING, JwtProperties.TOKEN_PREFIX +  token);
         cookie.setMaxAge(JwtProperties.EXPIRATION_TIME);
         cookie.setPath("/");

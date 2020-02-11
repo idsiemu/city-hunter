@@ -45,8 +45,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .addFilter(new JwtAuthorizationFilter(authenticationManager(),  this.userRepository))
                 .authorizeRequests()
                 // configure access rules
-                .antMatchers("/main").hasRole("USER")
-                .antMatchers("/admin/*").hasRole("ADMIN")
+                .antMatchers("/user**").hasRole("USER")
+                .antMatchers("/customer**").hasRole("CUSTOMER")
+//                .antMatchers("/**").hasRole("ADMIN")
                 .anyRequest().permitAll()
                 .and()
                 .formLogin()

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=279826e384548af3dcc55dae17451e73&libraries=services"></script>
+    <title>시티헌터</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/customer/main.css}">
+    <script th:src="@{/js/bootstrap.min.js}"></script>
+
+</head>
+<script>
+let hunterMarkers = new Array();
+
+let searchMarks = new Array();
+
+let count = 0;
+
+let data = new Map();
+
+let map = null;
+
+let currentMarker = null;
+
+// 주소-좌표 변환 객체를 생성합니다
+const geocoder = new kakao.maps.services.Geocoder();
+
+// 장소 검색 객체를 생성합니다
+const places = new kakao.maps.services.Places();
+
+window.onload = function () {
+//****************************************************************************************************************
+// Init 시작
+// ***************************************************************************************************************
+    map = generateMap();
+//****************************************************************************************************************
+// Init 끝
+// ***************************************************************************************************************
+//****************************************************************************************************************
+// Action 시작
+// ***************************************************************************************************************
+    $('#keyword').on('keydown',async function (e) {
+        var keyCode = e.which;
+        if (keyCode === 13) { // Enter Key
+            //마커 초기화
+            reset();
+
+            // 키워드로 장소를 검색합니다
+            await places.keywordSearch(document.getElementById("keyword").value, generateMarkerByKeyWord);
+
+            // 주소로 좌표를 검색합니다
+            await geocoder.addressSearch(document.getElementById("keyword").value, generateMarkerByJuso);
+
+            console.log(data.size);
+            if(data.size > 0){
+                console.log(123424);
+                if(data.get("juso_0") != null){
+                    console.log(12342)
+                }else if(data.get("keyword_0") != null){
+                    console.log(3241234);
+                }
+            }
+        }
+    });
+
+    kakao.maps.event.addListener(map, 'click', function () {
+        if(currentMarker != null){
+            const idValue = currentMarker.getTitle();
+            if(idValue !== ""){
+                $("#"+idValue).remove();
+            }
+            currentMarker.setDraggable(false);
+            currentMarker.setImage(markerImage());
+            currentMarker = null;
+        }
+    });
+}
+
+//****************************************************************************************************************
+// Action 끝
+// ***************************************************************************************************************
+function generateMap() {
+    // 지도를 표시할 div
+    const mapContainer = document.getElementById('map'),
+        mapOption = {
+            center: new kakao.maps.LatLng(37.54699, 127.09598), // 지도의 중심좌표
+            level: 15 // 지도의 확대 레벨
+        };
+
+    const map = new kakao.maps.Map(mapContainer, mapOption); // 지도를 생성합니다
+
+    // 마커가 지도 위에 표시되도록 설정합니다
+    const marker = generateHunterMarker();
+    currentMarker = marker;
+    marker.setMap(map);
+    hunterMarkers.push(marker);
+    return map;
+}
+
+function reset() {
+    searchMarks.forEach(function(marker){
+        marker.setMap(null)
+    });
+    if(currentMarker != null){
+        currentMarker.setImage(markerImage());
+    }
+    count = 0;
+    currentMarker = null;
+    data = null;
+    searchMarks = null;
+    data = new Map();
+    searchMarks = new Array();
+}
+
+function generateHunterMarker(){
+    let markerPosition = new kakao.maps.LatLng(37.54699, 127.09598); // 마커가 표시될 위치입니다
+
+    // 마커를 생성합니다
+    let marker = new kakao.maps.Marker({
+        map,
+        position: markerPosition,
+        image: markerImage(42) // 마커이미지 설정
+    });
+
+    // 마커 리스너 등록
+    addMarkerEventListener(marker);
+
+    return marker;
+}
+function generateMarkerByClick(place){
+    let markerPosition = null;
+    if(place === null || place ===undefined){
+        markerPosition = new kakao.maps.LatLng(37.54699, 127.09598); // 마커가 표시될 위치입니다
+    }else {
+        markerPosition = new kakao.maps.LatLng(place.x, place.y);
+    }
+
+    // 마커를 생성합니다
+    let marker = new kakao.maps.Marker({
+        map,
+        position: markerPosition,
+        image: markerImage() // 마커이미지 설정
+    });
+
+    // 마커가 드래그 가능하도록 설정합니다
+    marker.setDraggable(true);
+
+    // 마커에 클릭이벤트를 등록합니다
+    markerClick(marker, place);
+
+    return marker;
+}
+
+// 키워드 검색 완료 시 호출되는 콜백함수 입니다
+function generateMarkerByKeyWord (result, status, pagination) {
+    if (status === kakao.maps.services.Status.OK) {
+        // 검색된 장소 위치를 기준으로 지도 범위를 재설정하기위해
+        // LatLngBounds 객체에 좌표를 추가합니다
+        const bounds = new kakao.maps.LatLngBounds();
+        for (let i=0; i<result.length; i++) {
+            const coords = new kakao.maps.LatLng(result[i].y, result[i].x);
+            // 마커를 생성합니다
+            let marker = new kakao.maps.Marker({
+                map,
+                position: coords,
+                image: markerImage() // 마커이미지 설정
+            });
+            const div_id = "keyword_"+count;
+
+            data.set(div_id, result[i]);
+
+            marker.setTitle(div_id);
+
+            count++;
+
+            // 마커 리스너 등록
+            addMarkerEventListener(marker);
+            searchMarks.push(marker);
+            bounds.extend(coords);
+        }
+
+        // 검색된 장소 위치를 기준으로 지도 범위를 재설정합니다
+        map.setBounds(bounds);
+    }
+}
+
+function generateMarkerByJuso (result, status) {
+    // 정상적으로 검색이 완료됐으면
+    if (status === kakao.maps.services.Status.OK) {
+        for(let i=0;i<result.length;i++){
+            const coords = new kakao.maps.LatLng(result[i].y, result[i].x);
+            const div_id = "juso_"+count;
+            data.set(div_id, result[i]);
+            // 결과값으로 받은 위치를 마커로 표시합니다
+            // 마커를 생성합니다
+            const marker = new kakao.maps.Marker({
+                map,
+                position: coords
+            });
+            marker.setTitle(div_id);
+            if(i == 0){
+                marker.setImage(markerImage(42));
+
+                const bounds = new kakao.maps.LatLngBounds();
+
+                bounds.extend(coords);
+                // 검색된 장소 위치를 기준으로 지도 범위를 재설정합니다
+                map.setBounds(bounds);
+                // 지도의 중심을 결과값으로 받은 위치로 이동시킵니다
+                map.setCenter(coords);
+
+                currentMarker = marker;
+
+            }else{
+                marker.setImage(markerImage());
+            }
+            count++;
+            searchMarks.push(marker);
+            // 마커 리스너 등록
+            addMarkerEventListener(marker);
+        }
+    }
+}
+
+function addMarkerEventListener(marker) {
+    // 마커에 mouseover 이벤트를 등록합니다
+    kakao.maps.event.addListener(marker, 'mouseover', function() {
+        marker.setImage(markerImage(42));
+    });
+
+    // 마커에 mouseout 이벤트를 등록합니다
+    kakao.maps.event.addListener(marker, 'mouseout', function() {
+        marker.setImage(markerImage());
+    });
+
+    // 마커에 click 이벤트를 등록합니다
+    kakao.maps.event.addListener(marker, 'click', function() {
+        marker.setClickable(true);
+        if(currentMarker != null){
+            const removeValue = currentMarker.getTitle();
+            if(removeValue !== ""){
+                $("#"+currentMarker.getTitle()).remove();
+            }
+        }
+        displayData(marker.getTitle());
+        if(currentMarker != null){
+            currentMarker.setDraggable(false);
+            currentMarker.setImage(markerImage());
+        }
+        currentMarker = marker;
+        marker.setImage(markerImage(42));
+        // 마커가 드래그 가능하도록 설정합니다
+        marker.setDraggable(true);
+    });
+}
+
+function displayData(id) {
+    for (let [key, value] of data) {
+        if(key == id){
+            const splitKey = key.split("_");
+            if(splitKey[0] == "keyword"){
+                    $("#marker_detail").append(
+                    '<div id='+ key+ '>'
+                    +'  <div>'+ value.address_name +'</div>'
+                    +'  <div>'+ value.category_group_name +'</div>'
+                    +'  <div>'+ value.category_name +'</div>'
+                    +'  <div>'+ value.phone +'</div>'
+                    +'  <div>'+ value.place_name +'</div>'
+                    +'  <div>'+ value.road_address_name +'</div>'
+                    +'</div>'
+                );
+            }else if(splitKey[0] == "juso"){
+                if(value.road_address != null){
+                    $("#marker_detail").append(
+                     '<div id='+ key + '>'
+                    +'  <div>'+ value.road_address.address_name +'</div>'
+                    +'  <div>'+ value.address.address_name +'</div>'
+                    +'</div>'
+                    );
+                }else{
+                    $("#marker_detail").append(
+                     '<div id='+ key+ '>'
+                    +'  <div>'+ value.address.address_name +'</div>'
+                    +'</div>'
+                    );
+                }
+            }
+        }
+    }
+}
+
+function markerImage(size) {
+    if(size == null){
+        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-small-32.png', // 마커이미지의 주소입니다
+            imageSize = new kakao.maps.Size(32, 32), // 마커이미지의 크기입니다
+            imageOption = {offset: new kakao.maps.Point(20, 32)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
+        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+        return markerImage;
+    } else {
+        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-big-48.png', // 마커이미지의 주소입니다
+            imageSize = new kakao.maps.Size(size, size), // 마커이미지의 크기입니다
+            imageOption = {offset: new kakao.maps.Point(25, size)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
+        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+        return markerImage;
+    }
+}
+</script>
+<body>
+<div>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="profile">
+            <a class="navbar-brand" href="#"><img th:src="@{/images/iconmonstr-user-circle-thin-240.png}"></a>
+        </div>
+        <div class="search">
+            <input class="form-control mr-sm-2" type="text" id="keyword" placeholder="장소 검색">
+        </div>
+        <div class="burger">
+            <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+        <div class="navbar-collapse collapse" id="navbarColor02" style="">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Features</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Pricing</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">About</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div>
+        <div id="map" style="width:100%;height:400px;">
+        </div>
+    </div>
+    <div id="marker_detail">
+    </div>
+        <footer style="display: flex;" id="footer">
+            <div class="footer_item">
+                <a>
+                    <img th:src="@{/images/iconmonstr-bus-32.png}">
+                </a>
+            </div>
+            <div class="footer_item">
+                <a>
+                    <img th:src="@{/images/iconmonstr-car-32.png}">
+                </a>
+            </div>
+            <div class="footer_item">
+                <a>
+                    <img th:src="@{/images/iconmonstr-location-32.png}">
+                </a>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
