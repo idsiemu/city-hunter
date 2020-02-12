@@ -1,8 +1,12 @@
 .signup_title {margin: 40px 0px; text-align: center;}
 .signup_text {margin: 0 40px 6px;}
+.signup_text select {padding: 0.375rem;}
 .signup_text_naver {margin: 6px 40px; padding-top: 12px; text-align: center;}
 .signup_text_a {margin: 0 40px 6px; padding-bottom: 12px; text-align: center;}
-.signup_text_p {margin: 40px 40px 0px; text-align: center;}
+.signup_text_login {margin: 40px 40px 0px; text-align: center;}
+.signup_text_signup {margin: 40px 40px 0px; text-align: center; font-size: 11px;}
+.signup_text_signup a {text-decoration: underline;}
+.signup_text_corporation {margin: 15px 40px 0px;}
 .signup_btn {margin: 20px 40px;}
 .signup_btn button {width: 100%;}
 .signup_hr { margin: 20px 40px; background-color: #dbdbdb; height: 1px;}

@@ -41,27 +41,17 @@ window.onload = function () {
 //****************************************************************************************************************
 // Action 시작
 // ***************************************************************************************************************
-    $('#keyword').on('keydown',async function (e) {
+    $('#keyword').on('keydown',function (e) {
         var keyCode = e.which;
         if (keyCode === 13) { // Enter Key
             //마커 초기화
             reset();
 
             // 키워드로 장소를 검색합니다
-            await places.keywordSearch(document.getElementById("keyword").value, generateMarkerByKeyWord);
+            places.keywordSearch(document.getElementById("keyword").value, generateMarkerByKeyWord);
 
             // 주소로 좌표를 검색합니다
-            await geocoder.addressSearch(document.getElementById("keyword").value, generateMarkerByJuso);
-
-            console.log(data.size);
-            if(data.size > 0){
-                console.log(123424);
-                if(data.get("juso_0") != null){
-                    console.log(12342)
-                }else if(data.get("keyword_0") != null){
-                    console.log(3241234);
-                }
-            }
+            geocoder.addressSearch(document.getElementById("keyword").value, generateMarkerByJuso);
         }
     });
 
@@ -100,6 +90,7 @@ function generateMap() {
 }
 
 function reset() {
+    const beforeDetail = document.getElementById("marker_detail"); while ( beforeDetail.hasChildNodes() ) { beforeDetail.removeChild( beforeDetail.firstChild ); }
     searchMarks.forEach(function(marker){
         marker.setMap(null)
     });
@@ -170,7 +161,13 @@ function generateMarkerByKeyWord (result, status, pagination) {
             const div_id = "keyword_"+count;
 
             data.set(div_id, result[i]);
-
+            if(i == 0 && count == 0){
+                displayData(div_id);
+                currentMarker = marker;
+                marker.setImage(markerImage(42));
+            }else{
+                marker.setImage(markerImage());
+            }
             marker.setTitle(div_id);
 
             count++;
@@ -200,7 +197,10 @@ function generateMarkerByJuso (result, status) {
                 position: coords
             });
             marker.setTitle(div_id);
-            if(i == 0){
+            if(i == 0 && count == 0){
+
+                displayData(div_id);
+
                 marker.setImage(markerImage(42));
 
                 const bounds = new kakao.maps.LatLngBounds();

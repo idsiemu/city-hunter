@@ -22,26 +22,31 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
-//    @GetMapping("user/main")
-//    public void userMainPage() {
-//    }
-
     @RequestMapping(value = "/user")
     public String userMain() {
         return "/user/main";
     }
-
-//    @GetMapping("main")
-//    public void customerMainPage() {
-//    }
 
     @RequestMapping(value = "/customer")
     public String customerMain() {
         return "/customer/main";
     }
 
-    @GetMapping("signup")
-    public void signupPage() {
+    @RequestMapping(value = "/signup")
+    public String signup() {
+        return "/signup";
+    }
+
+    @RequestMapping(value = "/signupGroup")
+    public String group() {
+        return "signupGroup";
+    }
+
+//    @RequestMapping(value = "/login")
+//    public String login() { return "login"; }
+
+    @GetMapping("login")
+    public void loginPage() {
     }
 
     @PostMapping("checkEmail")
@@ -66,6 +71,8 @@ public class UserController {
     public String signupProc(User user) {
         String rawPassword = user.getPassword();
         String encPassword = encoder.encode(rawPassword);
+        log.info(rawPassword);
+        log.info(encPassword);
         user.setPassword(encPassword);
         user.setRoles("USER");
 
@@ -73,12 +80,14 @@ public class UserController {
         return "redirect:/login";
     }
 
-    @GetMapping("login")
-    public void loginPage() {
-    }
+    @PostMapping("signupGroupProc")
+    public String signupGroupProc(User user) {
+        String rawPassword = user.getPassword();
+        String encPassword = encoder.encode(rawPassword);
+        user.setPassword(encPassword);
+        user.setRoles("CUSTOMER");
 
-//    @PostMapping("login")
-//    public String loginProc() {
-//        return "redirect:/main";
-//    }
+        userRepository.save(user);
+        return "redirect:/login";
+    }
 }

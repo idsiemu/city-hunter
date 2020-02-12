@@ -37,7 +37,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     @SneakyThrows
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
-        log.info("로그인 실행");
         // Grab credentials and map them to login viewmodel
         try {
             // Create login token
@@ -45,7 +44,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                     request.getParameter("username"),
                     request.getParameter("password"),
                     new ArrayList<>());
-
             // Authenticate user
             Authentication auth = authenticationManager.authenticate(authenticationToken);
             return auth;
@@ -65,7 +63,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 .withSubject(principal.getUsername())
                 .withExpiresAt(new Date(System.currentTimeMillis() + JwtProperties.EXPIRATION_TIME))
                 .sign(HMAC512(JwtProperties.SECRET.getBytes()));
-
         // Add token in response
         PrintWriter out = response.getWriter();
         int authentication = 0;

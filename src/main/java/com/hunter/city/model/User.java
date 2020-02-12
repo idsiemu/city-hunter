@@ -1,6 +1,7 @@
 package com.hunter.city.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -14,7 +15,7 @@ import java.util.List;
 @Data //lombok
 @Entity //JPA -> ORM
 @NoArgsConstructor
-public class User {
+public class User{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,11 +46,13 @@ public class User {
     @Column(length = 16)
     private String gender;
 
+//    @Column(name = "profile_image")
     private String profileImage; //프로파일 사진 경로+이름
 
     @Column(length = 16)
     private String provider; // kakao, google, facebook
 
+//    @Column(name = "provider_id",length = 50)
     @Column(length = 50)
     private String providerId;
 
@@ -58,9 +61,20 @@ public class User {
     @Column(length = 32)
     private String roles;
 
+//    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+//    @JsonManagedReference
+//    private List<Store> store = new ArrayList<>();
+//
+//    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+//    @JoinColumn(name = "organization_id")
+//    private Organization organization;
+
     @CreationTimestamp // 자동으로 현재 시간이 세팅
+//    @Column(name = "create_date")
     private Timestamp createDate;
+
     @CreationTimestamp // 자동으로 현재 시간이 세팅
+//    @Column(name = "update_date")
     private Timestamp updateDate;
 
     public User(String username, String password, String roles){

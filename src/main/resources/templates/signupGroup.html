@@ -8,7 +8,7 @@
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"
             integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
             crossorigin="anonymous"></script>
-    <title>회원가입</title>
+    <title>단체 회원가입</title>
 </head>
 <script>
     function checkEmail() {
@@ -67,9 +67,9 @@
 </script>
 <body>
 <div>
-    <h2 class="signup_title">회원가입</h2>
+    <h2 class="signup_title">단체 회원가입</h2>
     <div>
-        <form th:action="@{/signupProc}" method="POST">
+        <form th:action="@{/signupGroupProc}" method="POST">
             <div class="signup_btn">
                 <button class="btn btn-success" type="button">네이버로 로그인</button>
             </div>
@@ -86,12 +86,32 @@
                 <input type="password" placeholder="비밀번호 확인" class="form-control" name="confirm_password" required="required"/>
             </div>
             <div class="signup_text">
-                <input type="text" placeholder="성명" class="form-control" name="name" required="required"/>
+                <input type="text" placeholder="단체 이름" class="form-control" name="name" required="required"/>
             </div>
             <div class="signup_text">
-                <input type="email" placeholder="이메일" class="form-control" name="email" id="email" required="required" onfocusout="checkEmail();"/>
+                <input type="email" placeholder="단체 확인 이메일" class="form-control" name="email" id="email" required="required" onfocusout="checkEmail();"/>
                 <div class="invalid-feedback">이미 사용중인 이메일입니다.</div>
                 <div class="valid-feedback">사용가능합니다.</div>
+            </div>
+            <div class="signup_text_corporation">
+                    <h6>단체 확인 부가 정보</h6>
+            </div>
+            <div class="signup_text">
+                <input type="text" placeholder="단체 대표자명" class="form-control" name="owner_name" required="required"/>
+            </div>
+            <div class="signup_text">
+                <select class="form-control">
+                    <option>단체종류</option>
+                    <option>개인사업자</option>
+                    <option>영리법인</option>
+                    <option>비영리법인</option>
+                </select>
+            </div>
+            <div class="signup_text">
+                <input type="text" placeholder="사업자등록번호" class="form-control" name="company_number" required="required"/>
+            </div>
+            <div class="signup_text">
+                <input type="text" placeholder="법인등록번호" class="form-control" name="corporate_number" required="required"/>
             </div>
             <div class="signup_btn">
                 <button class="btn btn-success" type="submit">가입</button>
@@ -105,8 +125,8 @@
         </div>
         <div class="signup_text_signup">
             <P>
-                회사 및 단체 계정이 필요하세요?
-                <a th:href="@{~/signupGroup}">법인 회원 가입</a>
+                개인 계정이 필요하세요?
+                <a th:href="@{~/signup}">개인 회원 가입</a>
             </P>
         </div>
     </div>
