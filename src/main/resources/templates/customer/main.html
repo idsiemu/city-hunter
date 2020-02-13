@@ -35,6 +35,12 @@ window.onload = function () {
 // Init 시작
 // ***************************************************************************************************************
     map = generateMap();
+
+    // resize();
+    window.onresize = function() {
+        resize();
+    };
+
 //****************************************************************************************************************
 // Init 끝
 // ***************************************************************************************************************
@@ -72,6 +78,10 @@ window.onload = function () {
 // Action 끝
 // ***************************************************************************************************************
 function generateMap() {
+
+    const map_size = window.outerHeight - (document.getElementsByTagName("header")[0].offsetHeight + document.getElementsByTagName("footer")[0].offsetHeight);
+    document.getElementsByTagName("section")[0].style.height = map_size+"px";
+
     // 지도를 표시할 div
     const mapContainer = document.getElementById('map'),
         mapOption = {
@@ -80,6 +90,9 @@ function generateMap() {
         };
 
     const map = new kakao.maps.Map(mapContainer, mapOption); // 지도를 생성합니다
+
+    const coords = new kakao.maps.LatLng(37.54699, 127.09598);
+    map.setCenter(coords);
 
     // 마커가 지도 위에 표시되도록 설정합니다
     const marker = generateHunterMarker();
@@ -308,58 +321,68 @@ function markerImage(size) {
         return markerImage;
     }
 }
+
+function resize() {
+    const map_size = window.outerHeight - (document.getElementsByTagName("header")[0].offsetHeight + document.getElementsByTagName("footer")[0].offsetHeight);
+    document.getElementsByTagName("section")[0].style.height = map_size+"px";
+    map.relayout();
+    const coords = new kakao.maps.LatLng(37.54699, 127.09598);
+    map.setCenter(coords);
+}
 </script>
 <body>
 <div>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="profile">
-            <a class="navbar-brand" href="#"><img th:src="@{/images/iconmonstr-user-circle-thin-240.png}"></a>
-        </div>
-        <div class="search">
-            <input class="form-control mr-sm-2" type="text" id="keyword" placeholder="장소 검색">
-        </div>
-        <div class="burger">
-            <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-        </div>
-        <div class="navbar-collapse collapse" id="navbarColor02" style="">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Features</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Pricing</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">About</a>
-                </li>
-            </ul>
-        </div>
-    </nav>
-    <div>
-        <div id="map" style="width:100%;height:400px;">
-        </div>
-    </div>
-    <div id="marker_detail">
-    </div>
-        <footer style="display: flex;" id="footer">
-            <div class="footer_item">
-                <a>
-                    <img th:src="@{/images/iconmonstr-bus-32.png}">
-                </a>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="profile">
+                <a class="navbar-brand" href="#"><img th:src="@{/images/iconmonstr-user-circle-thin-240.png}"></a>
             </div>
-            <div class="footer_item">
-                <a>
-                    <img th:src="@{/images/iconmonstr-car-32.png}">
-                </a>
+            <div class="search">
+                <input class="form-control mr-sm-2" type="text" id="keyword" placeholder="장소 검색">
             </div>
-            <div class="footer_item">
-                <a>
-                    <img th:src="@{/images/iconmonstr-location-32.png}">
-                </a>
+            <div class="burger">
+                <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
             </div>
-        </footer>
+            <div class="navbar-collapse collapse" id="navbarColor02" style="">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Pricing</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <section>
+        <div id="map" style="width:100%; height: inherit; display: flex;">
+        </div>
+    </section>
+    <div id="marker_detail" style="display: flex;">
     </div>
+    <footer style="display: flex;" id="footer">
+        <div class="footer_item">
+            <a>
+                <img th:src="@{/images/iconmonstr-bus-32.png}">
+            </a>
+        </div>
+        <div class="footer_item">
+            <a>
+                <img th:src="@{/images/iconmonstr-car-32.png}">
+            </a>
+        </div>
+        <div class="footer_item">
+            <a>
+                <img th:src="@{/images/iconmonstr-location-32.png}">
+            </a>
+        </div>
+    </footer>
+</div>
 </body>
 </html>

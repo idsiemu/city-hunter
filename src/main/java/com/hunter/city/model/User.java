@@ -46,35 +46,30 @@ public class User{
     @Column(length = 16)
     private String gender;
 
-//    @Column(name = "profile_image")
+    @Column(name = "profile_image")
     private String profileImage; //프로파일 사진 경로+이름
 
     @Column(length = 16)
     private String provider; // kakao, google, facebook
 
-//    @Column(name = "provider_id",length = 50)
-    @Column(length = 50)
+    @Column(name = "provider_id",length = 50)
     private String providerId;
 
-    private int active;
+    private int active = 1;
 
     @Column(length = 32)
     private String roles;
 
-//    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-//    @JsonManagedReference
-//    private List<Store> store = new ArrayList<>();
-//
-//    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-//    @JoinColumn(name = "organization_id")
-//    private Organization organization;
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Organization> organization = new ArrayList<>();
 
     @CreationTimestamp // 자동으로 현재 시간이 세팅
-//    @Column(name = "create_date")
+    @Column(name = "create_date")
     private Timestamp createDate;
 
     @CreationTimestamp // 자동으로 현재 시간이 세팅
-//    @Column(name = "update_date")
+    @Column(name = "update_date")
     private Timestamp updateDate;
 
     public User(String username, String password, String roles){

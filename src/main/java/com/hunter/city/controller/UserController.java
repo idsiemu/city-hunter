@@ -1,20 +1,28 @@
 package com.hunter.city.controller;
 
+import com.hunter.city.model.Organization;
 import com.hunter.city.model.User;
 import com.hunter.city.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.persistence.Column;
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Slf4j
 @Controller
 public class UserController {
+
+
 
     @Autowired
     private PasswordEncoder encoder;
@@ -42,14 +50,10 @@ public class UserController {
         return "signupGroup";
     }
 
-//    @RequestMapping(value = "/login")
-//    public String login() { return "login"; }
+    @RequestMapping(value = "/login")
+    public String login() { return "login"; }
 
-    @GetMapping("login")
-    public void loginPage() {
-    }
-
-    @PostMapping("checkEmail")
+    @PostMapping("/checkemail")
     @ResponseBody
     public int checkEmail(String email) {
         if(userRepository.countByEmail(email) > 0){
@@ -58,9 +62,9 @@ public class UserController {
         return 1;
     }
 
-    @PostMapping("checkUsername")
+    @PostMapping("/checkusername")
     @ResponseBody
-    public int checkUser(String username) {
+    public int usernameCheck(String username) {
         if(userRepository.countByUsername(username) > 0){
             return 0;
         }
@@ -71,8 +75,6 @@ public class UserController {
     public String signupProc(User user) {
         String rawPassword = user.getPassword();
         String encPassword = encoder.encode(rawPassword);
-        log.info(rawPassword);
-        log.info(encPassword);
         user.setPassword(encPassword);
         user.setRoles("USER");
 
@@ -81,13 +83,37 @@ public class UserController {
     }
 
     @PostMapping("signupGroupProc")
-    public String signupGroupProc(User user) {
-        String rawPassword = user.getPassword();
-        String encPassword = encoder.encode(rawPassword);
-        user.setPassword(encPassword);
-        user.setRoles("CUSTOMER");
+    @ResponseBody
+    public int signupGroupProc(HttpServletRequest request) {
+        try {
+            User user = new User();
+            Organization organization = new Organization();
+            List<Organization> list = new ArrayList<>();
 
-        userRepository.save(user);
-        return "redirect:/login";
+            user.setUsername(request.getParameter("username"));
+            user.setPassword(encoder.encode(request.getParameter("password")));
+            user.setEmail(request.getParameter("email"));
+            user.setRoles("CUSTOMER");
+            organization.setOwnerName(request.getParameter("owner_name"));
+            int division = Integer.parseInt(request.getParameter("division"));
+            organization.setDivision(division);
+            if(division == 1){
+                organization.setCompanyCode(Integer.parseInt(request.getParameter("company_code")));
+            }else if(division == 2){
+                organization.setCompanyCode(Integer.parseInt(request.getParameter("company_code")));
+                organization.setCorporateCode(Integer.parseInt(request.getParameter("corporate_code")));
+            }else if(division == 3){
+                organization.setCorporateCode(Integer.parseInt(request.getParameter("corporate_code")));
+            }
+            organization.setUser(user);
+
+            list.add(organization);
+            user.setOrganization(list);
+            userRepository.save(user);
+            return 1;
+        }catch (Exception e){
+            e.printStackTrace();
+            return 0;
+        }
     }
 }

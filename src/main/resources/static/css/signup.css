@@ -1,6 +1,7 @@
 .signup_title {margin: 40px 0px; text-align: center;}
 .signup_text {margin: 0 40px 6px;}
 .signup_text select {padding: 0.375rem;}
+.none {display: none;}
 .signup_text_naver {margin: 6px 40px; padding-top: 12px; text-align: center;}
 .signup_text_a {margin: 0 40px 6px; padding-bottom: 12px; text-align: center;}
 .signup_text_login {margin: 40px 40px 0px; text-align: center;}
