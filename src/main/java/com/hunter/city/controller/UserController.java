@@ -4,7 +4,6 @@ import com.hunter.city.model.Organization;
 import com.hunter.city.model.User;
 import com.hunter.city.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.persistence.Column;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +19,6 @@ import java.util.List;
 @Slf4j
 @Controller
 public class UserController {
-
-
 
     @Autowired
     private PasswordEncoder encoder;
@@ -36,9 +32,7 @@ public class UserController {
     }
 
     @RequestMapping(value = "/customer")
-    public String customerMain() {
-        return "/customer/main";
-    }
+    public String customerMain() { return "/customer/main"; }
 
     @RequestMapping(value = "/signup")
     public String signup() {

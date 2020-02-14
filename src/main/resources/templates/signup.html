@@ -11,48 +11,73 @@
     <title>회원가입</title>
 </head>
 <script>
-    function checkEmail() {
-        const email = document.getElementById("email").value;
-        if(email.length > 0){
+    function submit() {
+        const username = document.getElementById("username");
+        const password = document.getElementById("password");
+        const confirm_password = document.getElementById("confirm_password");
+        const name = document.getElementById("name");
+        const email = document.getElementById("email");
+
+        let invalid_count = 0;
+
+        invalid_count = invalid_count + validationCheck(username);
+        invalid_count = invalid_count + validationCheck(password);
+        invalid_count = invalid_count + validationCheck(confirm_password);
+        invalid_count = invalid_count + validationCheck(name);
+        invalid_count = invalid_count + validationCheck(email);
+
+        if(invalid_count == 0){
+            const userData = new FormData();
+            userData.append("username", username.value);
+            userData.append("password", password.value);
+            userData.append("name", name.value);
+            userData.append("email", email.value);
             $.ajax({
                 type: "POST",
-                url: "/checkEmail",
-                data: "email="+email,
-                dataType:"json",
+                url: "/signupProc",
+                data: userData,
+                processData : false,
+                contentType : false,
                 success: function (data) {
                     if(data == 1) {
-                        document.getElementById("email").classList.remove("is-invalid");
-                        document.getElementById("email").classList.add("is-valid");
+                        location.href = "/login";
                     } else if(data == 0) {
-                        document.getElementById("email").classList.remove("is-valid");
-                        document.getElementById("email").classList.add("is-invalid");
+                        alert("error");
                     }
                 },
                 error: function (xhr,err){
                     alert("관리자에게 문의하세요.");
                 }
             });
-        }else{
-            document.getElementById("email").classList.remove("is-invalid");
-            document.getElementById("email").classList.remove("is-valid");
         }
     }
 
-    function checkUsername() {
-        const username = document.getElementById("username").value;
-        if(username.length > 0){
+    function focusOut(element) {
+        const id = element.id;
+        if(id == "email" || id == "username"){
+            ajaxCheck(element);
+        }else{
+            validationCheck(element);
+        }
+    }
+
+    function ajaxCheck(element) {
+        const value = element.value;
+        const url = "/check"+element.id;
+        const submit_data = element.id +"="+value;
+        if(value.length > 0){
             $.ajax({
                 type: "POST",
-                url: "/checkUsername",
-                data: "username="+username,
+                url: url,
+                data: submit_data,
                 dataType:"json",
                 success: function (data) {
                     if(data == 1) {
-                        document.getElementById("username").classList.remove("is-invalid");
-                        document.getElementById("username").classList.add("is-valid");
+                        element.classList.remove("is-invalid");
+                        element.classList.add("is-valid");
                     } else if(data == 0) {
-                        document.getElementById("username").classList.remove("is-valid");
-                        document.getElementById("username").classList.add("is-invalid");
+                        element.classList.remove("is-valid");
+                        element.classList.add("is-invalid");
                     }
                 },
                 error: function (xhr,err){
@@ -60,8 +85,50 @@
                 }
             });
         }else{
-            document.getElementById("username").classList.remove("is-invalid");
-            document.getElementById("username").classList.remove("is-valid");
+            element.classList.add("is-invalid");
+            element.classList.remove("is-valid");
+            invalidFeedBack(element, 1);
+        }
+    }
+
+    function validationCheck(element) {
+        const value = element.value;
+        if(value == "" || value == null){
+            element.classList.add("is-invalid");
+            element.classList.remove("is-valid");
+            invalidFeedBack(element, 1);
+            return 1;
+        }else if(element.value == 0 && element.id == "division") {
+            element.classList.add("is-invalid");
+            element.classList.remove("is-valid");
+            return 1;
+        }else {
+            element.classList.remove("is-invalid");
+            return 0;
+        }
+    }
+
+    function passwordCheck(element) {
+        const password = document.getElementById("password").value;
+        if(password != element.value){
+            element.classList.add("is-invalid");
+            element.classList.remove("is-valid");
+            element.nextSibling.nextSibling.innerHTML = "비밀번호가 일치하지 않습니다.";
+        }else if(element.value == "" || element.value == null){
+            element.classList.add("is-invalid");
+            element.classList.remove("is-valid");
+            element.nextSibling.nextSibling.innerHTML = "필수 정보 입니다.";
+        }else{
+            element.classList.remove("is-invalid");
+            element.classList.add("is-valid");
+        }
+    }
+
+    function invalidFeedBack(element, division) {
+        if(division == 1){
+            element.nextSibling.nextSibling.innerHTML = "필수 정보 입니다.";
+        }else if(division == 2){
+            element.nextSibling.nextSibling.innerHTML = "이미 사용중 입니다.";
         }
     }
 </script>
@@ -69,34 +136,35 @@
 <div>
     <h2 class="signup_title">회원가입</h2>
     <div>
-        <form th:action="@{/signupProc}" method="POST">
-            <div class="signup_btn">
-                <button class="btn btn-success" type="button">네이버로 로그인</button>
-            </div>
-            <div class="signup_hr"></div>
-            <div class="signup_text">
-                <input type="text" placeholder="사용자 아이디" class="form-control" name="username" id="username" required="required" onfocusout="checkUsername();"/>
-                <div class="invalid-feedback">이미 사용중인 아이디입니다.</div>
-                <div class="valid-feedback">사용가능합니다.</div>
-            </div>
-            <div class="signup_text">
-                <input type="password" placeholder="비밀번호" class="form-control" name="password" required="required"/>
-            </div>
-            <div class="signup_text">
-                <input type="password" placeholder="비밀번호 확인" class="form-control" name="confirm_password" required="required"/>
-            </div>
-            <div class="signup_text">
-                <input type="text" placeholder="성명" class="form-control" name="name" required="required"/>
-            </div>
-            <div class="signup_text">
-                <input type="email" placeholder="이메일" class="form-control" name="email" id="email" required="required" onfocusout="checkEmail();"/>
-                <div class="invalid-feedback">이미 사용중인 이메일입니다.</div>
-                <div class="valid-feedback">사용가능합니다.</div>
-            </div>
-            <div class="signup_btn">
-                <button class="btn btn-success" type="submit">가입</button>
-            </div>
-        </form>
+        <div class="signup_btn">
+            <button class="btn btn-success" type="button">네이버로 로그인</button>
+        </div>
+        <div class="signup_hr"></div>
+        <div class="signup_text">
+            <input type="text" placeholder="사용자 아이디" class="form-control" name="username" id="username" onfocusout="focusOut(this);"/>
+            <div class="invalid-feedback">이미 사용중 입니다.</div>
+            <div class="valid-feedback">사용가능합니다.</div>
+        </div>
+        <div class="signup_text">
+            <input type="password" placeholder="비밀번호" class="form-control" name="password" id="password" onfocusout="focusOut(this);"/>
+            <div class="invalid-feedback">필수 항목입니다.</div>
+        </div>
+        <div class="signup_text">
+            <input type="password" placeholder="비밀번호 확인" class="form-control" name="confirm_password" id="confirm_password" onfocusout="passwordCheck(this);"/>
+            <div class="invalid-feedback">필수 항목입니다.</div>
+        </div>
+        <div class="signup_text">
+            <input type="text" placeholder="성명" class="form-control" name="name" id="name" onfocusout="focusOut(this);"/>
+            <div class="invalid-feedback">필수 항목입니다.</div>
+        </div>
+        <div class="signup_text">
+            <input type="email" placeholder="이메일" class="form-control" name="email" id="email" onfocusout="focusOut(this);"/>
+            <div class="invalid-feedback">이미 사용중 입니다.</div>
+            <div class="valid-feedback">사용가능합니다.</div>
+        </div>
+        <div class="signup_btn">
+            <button class="btn btn-success" type="button" onclick="submit();">가입</button>
+        </div>
         <div class="signup_text_login">
             <P>
                 계정이 있으신가요?

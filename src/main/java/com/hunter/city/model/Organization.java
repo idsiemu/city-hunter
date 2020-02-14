@@ -26,10 +26,19 @@ public class Organization {
     @Column(name = "organization_name", length = 50)
     private String organizationName;
 
-    @Column(name = "company_code",length = 50)
+    @Column(name = "address", length = 124)
+    private String address;
+
+    @Column(name = "road_address", length = 124)
+    private String roadAddress;
+
+    @Column(name = "tel_number")
+    private int telNumber;
+
+    @Column(name = "company_code")
     private int companyCode;
 
-    @Column(name = "corporate_code",length = 50)
+    @Column(name = "corporate_code")
     private int corporateCode;
 
     @Column(name = "location_x", length = 50)
