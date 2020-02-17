@@ -32,8 +32,8 @@ public class Organization {
     @Column(name = "road_address", length = 124)
     private String roadAddress;
 
-    @Column(name = "tel_number")
-    private int telNumber;
+    @Column(name = "tel_number", length = 50)
+    private String telNumber;
 
     @Column(name = "company_code")
     private int companyCode;

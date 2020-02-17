@@ -6,6 +6,7 @@
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=279826e384548af3dcc55dae17451e73&libraries=services"></script>
     <title>시티헌터</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}">
     <link rel="stylesheet" type="text/css" th:href="@{/css/customer/main.css}">
     <script th:src="@{/js/bootstrap.min.js}"></script>
@@ -20,9 +21,15 @@ let count = 0;
 
 let data = new Map();
 
+let hunterData = new Map();
+
 let map = null;
 
 let currentMarker = null;
+
+let currentCoords = null;
+
+let state = 0; //현재 맵에서의 성태 0.등록 1.수정
 
 // 주소-좌표 변환 객체를 생성합니다
 const geocoder = new kakao.maps.services.Geocoder();
@@ -47,29 +54,86 @@ window.onload = function () {
 // Action 시작
 // ***************************************************************************************************************
     $('#keyword').on('keydown',function (e) {
-        var keyCode = e.which;
-        if (keyCode === 13) { // Enter Key
+        let keyCode = e.which;
+        const keyword =  document.getElementById("keyword").value;
+        if (keyCode === 13 && keyword.length > 0) { // Enter Key
             //마커 초기화
             reset();
 
             // 키워드로 장소를 검색합니다
-            places.keywordSearch(document.getElementById("keyword").value, generateMarkerByKeyWord);
+            places.keywordSearch(keyword, generateMarkerByKeyWord);
 
             // 주소로 좌표를 검색합니다
-            geocoder.addressSearch(document.getElementById("keyword").value, generateMarkerByJuso);
+            geocoder.addressSearch(keyword, generateMarkerByJuso);
         }
     });
 
-    kakao.maps.event.addListener(map, 'click', function () {
-        if(currentMarker != null){
+    $('#search_icon').on('click', function () {
+        const keyword =  document.getElementById("keyword").value;
+        if (keyword.length > 0) { // Enter Key
+            //마커 초기화
+            reset();
+
+            // 키워드로 장소를 검색합니다
+            places.keywordSearch(keyword, generateMarkerByKeyWord);
+
+            // 주소로 좌표를 검색합니다
+            geocoder.addressSearch(keyword, generateMarkerByJuso);
+        }
+    });
+
+    kakao.maps.event.addListener(map, 'click', function (e) {
+        if(currentMarker != null && state == 0){
+            console.log(234423);
             const idValue = currentMarker.getTitle();
             if(idValue !== ""){
                 $("#"+idValue).remove();
             }
             currentMarker.setDraggable(false);
-            currentMarker.setImage(markerImage());
+            if(idValue.indexOf("hunter") != -1){
+                currentMarker.setImage(markerImage(32));
+            }else{
+                currentMarker.setImage(markerImage());
+            }
             resize();
-            // currentMarker = null;
+            currentMarker = null;
+        }else if(state == 1){
+            geocoder.coord2Address(e.latLng.getLng(), e.latLng.getLat(), function(result, status) {
+                if (status === kakao.maps.services.Status.OK) {
+                    if(currentMarker != null){
+                        let count = 0;
+                        searchMarks.forEach(function(marker){
+                            if(currentMarker == marker){
+                                count++;
+                            }
+                        });
+                        if(count == 0){
+                            currentMarker.setMap(null);
+                        }else{
+                            currentMarker.setImage(markerImage());
+                        }
+                    }
+                    // 마커를 생성합니다
+                    const marker = new kakao.maps.Marker({
+                        map,
+                        position: e.latLng,
+                        image: markerImage(42) // 마커이미지 설정
+                    });
+                    currentMarker = marker;
+                    currentCoords = e.latLng;
+                    document.getElementById("location_x").value = e.latLng.Ha;
+                    document.getElementById("location_y").value = e.latLng.Ga;
+                    if(result[0].road_address != null){
+                        document.getElementById("road_address").value = result[0].road_address.address_name;
+                        document.getElementById("road_address").style.display = "block";
+                        document.getElementById("address").style.display = "none";
+                    }else{
+                        document.getElementById("address").value = result[0].address.address_name;
+                        document.getElementById("address").style.display = "block";
+                        document.getElementById("road_address").style.display = "none";
+                    }
+                }
+            });
         }
     });
 }
@@ -82,7 +146,7 @@ function generateMap() {
     const mapContainer = document.getElementById('map'),
         mapOption = {
             center: new kakao.maps.LatLng(37.5546788388674, 126.970606917394), // 지도의 중심좌표
-            level: 10 // 지도의 확대 레벨
+            level: 14 // 지도의 확대 레벨
         };
 
     const map = new kakao.maps.Map(mapContainer, mapOption); // 지도를 생성합니다
@@ -94,15 +158,18 @@ function generateMap() {
 }
 
 function reset() {
-    const beforeDetail = document.getElementById("marker_detail"); while ( beforeDetail.hasChildNodes() ) { beforeDetail.removeChild( beforeDetail.firstChild ); }
+    if(state == 0){
+        const beforeDetail = document.getElementById("marker_detail"); while ( beforeDetail.hasChildNodes() ) { beforeDetail.removeChild( beforeDetail.firstChild ); }
+    }
     searchMarks.forEach(function(marker){
-        marker.setMap(null)
+        marker.setMap(null);
     });
     if(currentMarker != null){
         currentMarker.setImage(markerImage());
     }
     count = 0;
     currentMarker = null;
+    currentCoords = null;
     data = null;
     searchMarks = null;
     data = new Map();
@@ -129,40 +196,48 @@ async function getPlace() {
 function generateHunterMarker(){
     getPlace().then(function(result) {
         if(result != null){
+            let count = 0;
             result.forEach(function(place){
-                let count = 0;
                 if((place.locationX != null && place.locationX != "")&& (place.locationY != null && place.locationY != "")){
-
                     const markerPosition = new kakao.maps.LatLng(place.locationX, place.locationY); // 마커가 표시될 위치입니다
 
                     // 마커를 생성합니다
                     const marker = new kakao.maps.Marker({
                         map,
                         position: markerPosition,
+                        image: markerImage(32) // 마커이미지 설정
                     });
                     if(place.address == null || place.roadAddress == null){
                         searchDetailAddrFromCoords(markerPosition, place);
                     }
-
                     const div_id = "hunter_"+place.id;
                     marker.setTitle(div_id);
-                    data.set(div_id, place);
-                    if(count == 0){
-                        marker.setImage(markerImage(42));
-                        currentMarker = marker;
-                        map.setCenter(markerPosition);
-                    }else{
-                        marker.setImage(markerImage());
-                    }
+                    hunterData.set(div_id, place);
+
 
                     // 마커 리스너 등록
                     addMarkerEventListener(marker);
                     marker.setMap(map);
                     hunterMarkers.push(marker);
                     count++;
+                }else{
+                    const div_id = "hunter_"+place.id;
+                    hunterData.set(div_id, place);
+                    state = 1;
                 }
             });
-            resize(1);
+            if(hunterMarkers.length != result.length){
+                //x, y축 좌표가 없으면 해당 데이터를 바로 띄워준다.
+                for (let [key, value] of hunterData) {
+                    if(((value.locationX == null || value.locationX == "") || (value.locationY == null || value.locationY == ""))) {
+                        displayData(key);
+                        return;
+                    }
+                }
+            }
+            if(state == 0){
+                resize();
+            }
         }
     });
 }
@@ -200,7 +275,8 @@ function searchDetailAddrFromCoords(coords, place) {
             if(place.address == null){
                 place.address = result[0].address.address_name;
             }
-            displayData("hunter_"+place.id);
+            // displayData("hunter_"+place.id);
+            // 하나씩 바꿔가자 이거는 일단 조금만 있다가
         }
     });
 }
@@ -223,8 +299,30 @@ function generateMarkerByKeyWord (result, status, pagination) {
 
             data.set(div_id, result[i]);
             if(i == 0 && count == 0){
-                displayData(div_id);
+                if(state == 0){
+                    displayData(div_id);
+                }else if(state == 1){
+                    document.getElementById("location_x").value = result[i].y;
+                    document.getElementById("location_y").value = result[i].x;
+                    document.getElementById("organization_name").value = result[i].place_name;
+                    document.getElementById("road_address").value = result[i].road_address_name;
+                    document.getElementById("address").value = result[i].address_name;
+                    const split = result[i].phone != null ? result[i].phone.split('-') : "";
+                    if(split != ""){
+                        document.getElementById("num1").value = split[0];
+                        document.getElementById("num2").value = split[1];
+                        document.getElementById("num3").value = split[2];
+                    }
+                    if(result[i].road_address_name != null){
+                        document.getElementById("road_address").style.display = "block";
+                        document.getElementById("address").style.display = "none";
+                    }else{
+                        document.getElementById("road_address").style.display = "none";
+                        document.getElementById("address").style.display = "block";
+                    }
+                }
                 currentMarker = marker;
+                currentCoords = marker.getPosition();
                 marker.setImage(markerImage(42));
             }else{
                 marker.setImage(markerImage());
@@ -259,8 +357,22 @@ function generateMarkerByJuso (result, status) {
             });
             marker.setTitle(div_id);
             if(i == 0 && count == 0){
-
-                displayData(div_id);
+                if(state == 0){
+                    displayData(div_id);
+                }else if(state == 1){
+                    console.log(result[i]);
+                    document.getElementById("location_x").value = result[i].y;
+                    document.getElementById("location_y").value = result[i].x;
+                    if(result[i].address_type == "REGION"){
+                        document.getElementById("address").value = result[i].address_name;
+                        document.getElementById("address").style.display = "block";
+                        document.getElementById("road_address").style.display = "none";
+                    }else if(result[i].address_type == "ROAD"){
+                        document.getElementById("road_address").value = result[i].address_name;
+                        document.getElementById("road_address").style.display = "block";
+                        document.getElementById("address").style.display = "none";
+                    }
+                }
 
                 marker.setImage(markerImage(42));
 
@@ -273,6 +385,7 @@ function generateMarkerByJuso (result, status) {
                 map.setCenter(coords);
 
                 currentMarker = marker;
+                currentCoords = coords;
 
             }else{
                 marker.setImage(markerImage());
@@ -299,18 +412,70 @@ function addMarkerEventListener(marker) {
     // 마커에 click 이벤트를 등록합니다
     kakao.maps.event.addListener(marker, 'click', function() {
         marker.setClickable(true);
-        if(currentMarker != null){
+        if(currentMarker != null && state == 0){
             const removeValue = currentMarker.getTitle();
             if(removeValue !== ""){
                 $("#"+currentMarker.getTitle()).remove();
             }
-        }
-        displayData(marker.getTitle());
-        if(currentMarker != null){
+            if(currentMarker.getTitle().indexOf("hunter") != -1){
+                currentMarker.setImage(markerImage(32));
+            }else{
+                currentMarker.setImage(markerImage());
+            }
             currentMarker.setDraggable(false);
-            currentMarker.setImage(markerImage());
+        }
+        if(state == 0){
+            displayData(marker.getTitle());
+        }else if(state == 1){
+            let count = 0;
+            searchMarks.forEach(function(marker){
+                if(currentMarker == marker){
+                    count++;
+                }
+            });
+            if(count == 0){
+                currentMarker.setMap(null);
+            }else{
+                currentMarker.setImage(markerImage());
+            }
+            for (let [key, value] of data) {
+                if (key == marker.getTitle()) {
+                    console.log(value);
+                    const splitKey = key.split("_");
+                    if (splitKey[0] == "keyword") {
+                        document.getElementById("organization_name").value = value.place_name;
+                        document.getElementById("road_address").value = value.road_address_name;
+                        document.getElementById("address").value = value.address_name;
+                        const split = value.phone != null ? value.phone.split('-') : "";
+                        if(split != ""){
+                            document.getElementById("num1").value = split[0];
+                            document.getElementById("num2").value = split[1];
+                            document.getElementById("num3").value = split[2];
+                        }
+                        console.log(value.road_address_name);
+                        if(value.road_address_name != null && value.road_address_name != ""){
+                            document.getElementById("road_address").style.display = "block";
+                            document.getElementById("address").style.display = "none";
+                        }else{
+                            document.getElementById("road_address").style.display = "none";
+                            document.getElementById("address").style.display = "block";
+                        }
+                    }else if(splitKey[0] == "juso"){
+                        if(value.address_type == "REGION"){
+                            document.getElementById("address").value = value.address_name;
+                            document.getElementById("address").style.display = "block";
+                            document.getElementById("road_address").style.display = "none";
+                        }else if(value.address_type == "ROAD"){
+                            document.getElementById("road_address").value = value.address_name;
+                            document.getElementById("road_address").style.display = "block";
+                            document.getElementById("address").style.display = "none";
+                        }
+                    }
+                }
+            }
         }
         currentMarker = marker;
+        currentCoords = marker.getPosition();
         marker.setImage(markerImage(42));
         // 마커가 드래그 가능하도록 설정합니다
         marker.setDraggable(true);
@@ -318,122 +483,16 @@ function addMarkerEventListener(marker) {
 }
 
 function displayData(id) {
-    for (let [key, value] of data) {
-        if(key == id){
-            const splitKey = key.split("_");
-            if(splitKey[0] == "keyword"){
-                let num1 = null;
-                let num2 = null;
-                let num3 = null;
-                if(value.phone != null || value.phone != ""){
-                    const number = value.phone.replace(/\-/g,"").replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/,"$1-$2-$3");
-                    const split_number = number.split("-");
-                    num1 = split_number[0];
-                    num2 = split_number[1];
-                    num3 = split_number[2];
-                }
-                $("#marker_detail").append(
-                '<div id='+ key+ '>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="가게명" class="form-control" name="organization_name" id="organization_name" value="'+ value.place_name +'"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="대표자명" class="form-control" name="owner_name" id="owner_name"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="주소" class="form-control" name="road_address" id="road_address" value="'+ value.road_address_name +'" readonly="readonly"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="주소" class="form-control" name="address" id="address" value="'+ value.address_name +'" readonly="readonly"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <select class="form-control" id="division" onchange="selectBoxControl(this.value);">'
-                +'      <option value="0" selected="selected">단체종류</option>'
-                +'      <option value="1">개인사업자</option>'
-                +'      <option value="2">영리법인</option>'
-                +'      <option value="3">비영리법인</option>'
-                +'  </select>'
-                +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
-                +'</div>'
-                +'<div class="detail_text none">'
-                +'  <input type="number" placeholder="사업자등록번호" class="form-control" name="company_code" id="company_code" onfocusout="focusOut(this);"/>'
-                +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
-                +'</div>'
-                +'<div class="detail_text none">'
-                +'  <input type="number" placeholder="법인등록번호" class="form-control" name="corporate_code" id="corporate_code" onfocusout="focusOut(this);"/>'
-                +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="number" placeholder="총 수용인원" name="total_capacity" id="total_capacity" class="form-control"/>'
-                +'</div>'
-                +'<div class="detail_text_phone">'
-                +'  <input type="number" placeholder="010" name="num1" id="num1" value="'+ num1 +'" class="form-control first"/>'
-                +'  <input type="number" placeholder="1234" name="num2" id="num2" value="'+ num2 +'" class="form-control second"/>'
-                +'  <input type="number" placeholder="1234" name="num3" id="num3" value="'+ num3 +'" class="form-control third"/>'
-                +'</div>'
-                +'<div class="detail_btn">'
-                +'  <button class="btn btn-success" type="button" onclick="submit();">등록</button>'
-                +'</div>'
-                +'</div>'
-                );
-                resize(2);
-            }else if(splitKey[0] == "juso"){
-                const road_address = value.road_address == null ? null : value.road_address.address_name;
-                $("#marker_detail").append(
-                 '<div id='+ key+ '>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="가게명" class="form-control" name="organization_name" id="organization_name"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="대표자명" class="form-control" name="owner_name" id="owner_name"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="주소" class="form-control" name="road_address" id="road_address" value="'+ road_address +'" readonly="readonly"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="주소" class="form-control" name="address" id="address" value="'+ value.address.address_name +'" readonly="readonly"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <select class="form-control" id="division" onchange="selectBoxControl(this.value);">'
-                +'      <option value="0" selected="selected">단체종류</option>'
-                +'      <option value="1">개인사업자</option>'
-                +'      <option value="2">영리법인</option>'
-                +'      <option value="3">비영리법인</option>'
-                +'  </select>'
-                +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
-                +'</div>'
-                +'<div class="detail_text none">'
-                +'  <input type="number" placeholder="사업자등록번호" class="form-control" name="company_code" id="company_code" onfocusout="focusOut(this);"/>'
-                +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
-                +'</div>'
-                +'<div class="detail_text none">'
-                +'  <input type="number" placeholder="법인등록번호" class="form-control" name="corporate_code" id="corporate_code" onfocusout="focusOut(this);"/>'
-                +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="number" placeholder="총 수용인원" name="total_capacity" id="total_capacity" class="form-control"/>'
-                +'</div>'
-                +'<div class="detail_text_phone">'
-                +'  <input type="number" placeholder="010" name="num1" id="num1" class="form-control first"/>'
-                +'  <input type="number" placeholder="1234" name="num2" id="num2" class="form-control second"/>'
-                +'  <input type="number" placeholder="1234" name="num3" id="num3" class="form-control third"/>'
-                +'</div>'
-                +'<div class="detail_btn">'
-                +'  <button class="btn btn-success" type="button" onclick="submit();">등록</button>'
-                +'</div>'
-                +'</div>'
-                );
-                if(value.road_address == null){
-                    document.getElementById("road_address").style.display = "none";
-                }else{
-                    document.getElementById("address").style.display = "none";
-                }
-                resize(2);
-            }else if(splitKey[0] == "hunter"){
+    if(id.indexOf("hunter") != -1){
+        for (let [key, value] of hunterData) {
+            if(key == id){
+                const id = value.id;
+                const location_x = value.locationX;
+                const location_y = value.locationY;
                 const organization_name = value.organizationName == null ? "" : value.organizationName;
                 const owner_name = value.ownerName == null ? "" : value.ownerName;
-                const road_address = value.roadAddress;
-                const address = value.address;
+                const road_address = value.roadAddress == null ? "" : value.roadAddress;
+                const address = value.address == null ? "" : value.address;
                 const division = value.division == null ? 0 : value.division;
                 let company_code = null;
                 let corporate_code = null;
@@ -441,116 +500,229 @@ function displayData(id) {
                 let num1 = null;
                 let num2 = null;
                 let num3 = null;
-                if(value.telNumber != 0){
+                if(value.telNumber != 0 && value.telNumber != null){
                     const number = (value.telNumber.toString()).replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/,"$1-$2-$3");
-                    const split_number = number.split("-")[0];
+                    const split_number = number.split("-");
                     num1 = split_number[0];
                     num2 = split_number[1];
                     num3 = split_number[2];
                 }
                 $("#marker_detail").append(
-                 '<div id="'+ key +'">'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="가게명" class="form-control" name="organization_name" id="organization_name" value="'+ organization_name +'"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="대표자명" class="form-control" name="owner_name" id="owner_name" value="'+ owner_name +'"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="주소" class="form-control" name="road_address" id="road_address" readonly="readonly" value="'+ road_address +'"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="text" placeholder="주소" class="form-control" name="address" id="address" readonly="readonly" value="'+ address +'"/>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <select class="form-control" id="division" onchange="selectBoxControl(this.value);">'
-                +'      <option value="0" selected="selected">단체종류</option>'
-                +'      <option value="1">개인사업자</option>'
-                +'      <option value="2">영리법인</option>'
-                +'      <option value="3">비영리법인</option>'
-                +'  </select>'
-                +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
-                +'</div>'
-                +'<div class="detail_text none">'
-                +'  <input type="number" placeholder="사업자등록번호" class="form-control" name="company_code" id="company_code" value="'+ company_code +'" onfocusout="focusOut(this);"/>'
-                +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
-                +'</div>'
-                +'<div class="detail_text none">'
-                +'  <input type="number" placeholder="법인등록번호" class="form-control" name="corporate_code" id="corporate_code" value="'+ corporate_code +'" onfocusout="focusOut(this);"/>'
-                +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
-                +'</div>'
-                +'<div class="detail_text">'
-                +'  <input type="number" placeholder="총 수용인원" name="total_capacity" id="total_capacity" value="'+ total_capacity +'" class="form-control"/>'
-                +'</div>'
-                +'<div class="detail_text_phone">'
-                +'  <input type="number" placeholder="010" name="num1" id="num1" value="'+ num1 +'" class="form-control first"/>'
-                +'  <input type="number" placeholder="1234" name="num2" id="num2" value="'+ num2 +'" class="form-control second"/>'
-                +'  <input type="number" placeholder="1234" name="num3" id="num3" value="'+ num3 +'" class="form-control third"/>'
-                +'</div>'
-                +'<div class="detail_btn">'
-                +'  <button class="btn btn-success" type="button" onclick="submit();">등록</button>'
-                +'</div>'
-                +'</div>'
+                    '<div id="'+ key +'">'
+                    +'<div class="detail_text">'
+                    +'  <input type="hidden" name="id" id="id" value="'+ id +'"/>'
+                    +'  <input type="hidden" name="location_x" id="location_x" value="'+ location_x +'"/>'
+                    +'  <input type="hidden" name="location_y" id="location_y" value="'+ location_y +'"/>'
+                    +'  <input type="text" placeholder="가게명" class="form-control" name="organization_name" id="organization_name" value="'+ organization_name +'" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'</div>'
+                    +'<div class="detail_text">'
+                    +'  <input type="text" placeholder="대표자명" class="form-control" name="owner_name" id="owner_name" value="'+ owner_name +'" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'</div>'
+                    +'<div class="detail_text">'
+                    +'  <input type="text" placeholder="도로명 주소" class="form-control" name="road_address" id="road_address" readonly="readonly" value="'+ road_address +'" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'</div>'
+                    +'<div class="detail_text">'
+                    +'  <input type="text" placeholder="주소" class="form-control" name="address" id="address" readonly="readonly" value="'+ address +'" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'</div>'
+                    +'<div class="detail_text">'
+                    +'  <select class="form-control" id="division" onchange="selectBoxControl(this.value);">'
+                    +'      <option value="0" selected="selected">단체종류</option>'
+                    +'      <option value="1">개인사업자</option>'
+                    +'      <option value="2">영리법인</option>'
+                    +'      <option value="3">비영리법인</option>'
+                    +'  </select>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'</div>'
+                    +'<div class="detail_text none">'
+                    +'  <input type="number" placeholder="사업자등록번호" class="form-control" name="company_code" id="company_code" value="'+ company_code +'" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'</div>'
+                    +'<div class="detail_text none">'
+                    +'  <input type="number" placeholder="법인등록번호" class="form-control" name="corporate_code" id="corporate_code" value="'+ corporate_code +'" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'</div>'
+                    +'<div class="detail_text">'
+                    +'  <input type="number" placeholder="총 수용인원" name="total_capacity" id="total_capacity" value="'+ total_capacity +'" class="form-control" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'</div>'
+                    +'<div class="detail_text_phone">'
+                    +'  <input type="number" placeholder="010" name="num1" id="num1" value="'+ num1 +'" class="form-control first" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'  <input type="number" placeholder="1234" name="num2" id="num2" value="'+ num2 +'" class="form-control second" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'  <input type="number" placeholder="1234" name="num3" id="num3" value="'+ num3 +'" class="form-control third" onfocusout="focusOut(this);"/>'
+                    // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                    +'</div>'
+                    +'<div class="detail_btn" id="btn_ctrl">'
+                    +(state == 1 ? '<button class="btn btn-warning" type="button" onclick="modify();">수정</button>'+'<button class="btn btn-danger" type="button" onclick="delete();">삭제</button>'+'<button class="btn btn-secondary right" type="button" onclick="switchModify(2);">취소</button>' : '<button class="btn btn-secondary right" type="button" onclick="switchModify(1);">재수정</button>')
+                    +'</div>'
+                    +'</div>'
                 );
+                if(road_address == null || road_address == ""){
+                    document.getElementById("road_address").style.display = "none";
+                    document.getElementById("address").style.display = "block";
+                }else{
+                    document.getElementById("road_address").style.display = "block";
+                    document.getElementById("address").style.display = "none";
+                }
                 if(division == 0){
                     document.getElementById("division").options[0].selected = "selected";
                 }else if(division == 1){
                     document.getElementById("division").options[1].selected = "selected";
-                    selectBoxControl(1);
                     document.getElementById("company_code").value = value.companyCode;
+                    selectBoxControl(1);
                 }else if(division == 2){
                     document.getElementById("division").options[2].selected = "selected";
-                    selectBoxControl(2);
                     document.getElementById("company_code").value = value.companyCode;
                     document.getElementById("corporate_code").value = value.corporateCode;
+                    selectBoxControl(2);
                 }else if(division == 3){
                     document.getElementById("division").options[3].selected = "selected";
-                    selectBoxControl(3);
                     document.getElementById("corporate_code").value = value.corporateCode;
+                    selectBoxControl(3);
                 }
-                if(road_address == null){
-                    document.getElementById("road_address").style.display = "none";
-                }else{
-                    document.getElementById("address").style.display = "none";
+            }
+        }
+    }else{
+        for (let [key, value] of data) {
+            if(key == id){
+                const splitKey = key.split("_");
+                if(splitKey[0] == "keyword"){
+                    let num1 = null;
+                    let num2 = null;
+                    let num3 = null;
+                    if(value.phone != null || value.phone != ""){
+                        const number = value.phone.replace(/\-/g,"").replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/,"$1-$2-$3");
+                        const split_number = number.split("-");
+                        num1 = split_number[0];
+                        num2 = split_number[1];
+                        num3 = split_number[2];
+                    }
+                    $("#marker_detail").append(
+                        '<div id='+ key+ '>'
+                        +'<div class="detail_text">'
+                        +'  <input type="text" placeholder="가게명" class="form-control" name="organization_name" id="organization_name" value="'+ value.place_name +'" onfocusout="focusOut(this);"/>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <input type="text" placeholder="대표자명" class="form-control" name="owner_name" id="owner_name" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <input type="text" placeholder="도로명 주소" class="form-control" name="road_address" id="road_address" value="'+ value.road_address_name +'" readonly="readonly" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <input type="text" placeholder="주소" class="form-control" name="address" id="address" value="'+ value.address_name +'" readonly="readonly" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <select class="form-control" id="division" onchange="selectBoxControl(this.value);">'
+                        +'      <option value="0" selected="selected">단체종류</option>'
+                        +'      <option value="1">개인사업자</option>'
+                        +'      <option value="2">영리법인</option>'
+                        +'      <option value="3">비영리법인</option>'
+                        +'  </select>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text none">'
+                        +'  <input type="number" placeholder="사업자등록번호" class="form-control" name="company_code" id="company_code" onfocusout="focusOut(this);" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text none">'
+                        +'  <input type="number" placeholder="법인등록번호" class="form-control" name="corporate_code" id="corporate_code" onfocusout="focusOut(this);" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <input type="number" placeholder="총 수용인원" name="total_capacity" id="total_capacity" class="form-control" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text_phone">'
+                        +'  <input type="number" placeholder="010" name="num1" id="num1" value="'+ num1 +'" class="form-control first" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'  <input type="number" placeholder="1234" name="num2" id="num2" value="'+ num2 +'" class="form-control second" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'  <input type="number" placeholder="1234" name="num3" id="num3" value="'+ num3 +'" class="form-control third" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_btn" id="btn_ctrl">'
+                        +'  <button class="btn btn-success" type="button" onclick="submit();">등록</button>'
+                        +'</div>'
+                        +'</div>'
+                    );
+                    if(value.road_address_name == null || value.road_address_name == ""){
+                        document.getElementById("road_address").style.display = "none";
+                    }else{
+                        document.getElementById("address").style.display = "none";
+                    }
+                    resize(1);
+                }else if(splitKey[0] == "juso"){
+                    const road_address = value.road_address == null ? null : value.road_address.address_name;
+                    $("#marker_detail").append(
+                        '<div id='+ key+ '>'
+                        +'<div class="detail_text">'
+                        +'  <input type="text" placeholder="가게명" class="form-control" name="organization_name" id="organization_name" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <input type="text" placeholder="대표자명" class="form-control" name="owner_name" id="owner_name" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <input type="text" placeholder="도로명 주소" class="form-control" name="road_address" id="road_address" value="'+ road_address +'" readonly="readonly" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <input type="text" placeholder="주소" class="form-control" name="address" id="address" value="'+ value.address.address_name +'" readonly="readonly" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <select class="form-control" id="division" onchange="selectBoxControl(this.value);">'
+                        +'      <option value="0" selected="selected">단체종류</option>'
+                        +'      <option value="1">개인사업자</option>'
+                        +'      <option value="2">영리법인</option>'
+                        +'      <option value="3">비영리법인</option>'
+                        +'  </select>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text none">'
+                        +'  <input type="number" placeholder="사업자등록번호" class="form-control" name="company_code" id="company_code" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text none">'
+                        +'  <input type="number" placeholder="법인등록번호" class="form-control" name="corporate_code" id="corporate_code" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text">'
+                        +'  <input type="number" placeholder="총 수용인원" name="total_capacity" id="total_capacity" class="form-control" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_text_phone">'
+                        +'  <input type="number" placeholder="010" name="num1" id="num1" class="form-control first" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'  <input type="number" placeholder="1234" name="num2" id="num2" class="form-control second" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'  <input type="number" placeholder="1234" name="num3" id="num3" class="form-control third" onfocusout="focusOut(this);"/>'
+                        // +'  <div class="invalid-feedback">필수 정보 입니다.</div>'
+                        +'</div>'
+                        +'<div class="detail_btn" id="btn_ctrl">'
+                        +'  <button class="btn btn-success" type="button" onclick="submit();">등록</button>'
+                        +'</div>'
+                        +'</div>'
+                    );
+                    if(value.road_address == null || value.road_address == ""){
+                        document.getElementById("road_address").style.display = "none";
+                    }else{
+                        document.getElementById("address").style.display = "none";
+                    }
+                    resize(1);
                 }
             }
         }
     }
-}
-
-function markerImage(size) {
-    if(size == null){
-        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-small-blue-32.png', // 마커이미지의 주소입니다
-            imageSize = new kakao.maps.Size(32, 32), // 마커이미지의 크기입니다
-            imageOption = {offset: new kakao.maps.Point(20, 32)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
-        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
-        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-        return markerImage;
-    } else {
-        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-big-48.png', // 마커이미지의 주소입니다
-            imageSize = new kakao.maps.Size(size, size), // 마커이미지의 크기입니다
-            imageOption = {offset: new kakao.maps.Point(25, size)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
-        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
-        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-        return markerImage;
-    }
-}
-
-function resize(division) {
-    let position = null;
-    if(currentMarker != null){
-        position = currentMarker.getPosition();
-    }else{
-        position = new kakao.maps.LatLng(37.54699, 127.09598);
-    }
-    const map_size = window.outerHeight - (document.getElementsByTagName("header")[0].offsetHeight + document.getElementById("marker_detail").offsetHeight);
-    document.getElementsByTagName("section")[0].style.height = map_size+"px";
-    map.relayout();
-    map.setCenter(position);
-
-    // if(division != undefined || division == 1){
-    //
-    // }
 }
 
 function selectBoxControl(value) {
@@ -570,7 +742,308 @@ function selectBoxControl(value) {
         document.getElementById("company_code").parentNode.style.display = "none";
         document.getElementById("corporate_code").parentNode.style.display = "block";
     }
-    resize(2);
+    resize();
+}
+
+function markerImage(size) {
+    if(size == null){
+        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-small-blue-32.png', // 마커이미지의 주소입니다
+            imageSize = new kakao.maps.Size(32, 32), // 마커이미지의 크기입니다
+            imageOption = {offset: new kakao.maps.Point(20, 32)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
+        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+        return markerImage;
+    } else if(size == 42){
+        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-big-48.png', // 마커이미지의 주소입니다
+            imageSize = new kakao.maps.Size(size, size), // 마커이미지의 크기입니다
+            imageOption = {offset: new kakao.maps.Point(25, size)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
+        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+        return markerImage;
+    } else if(size == 32){
+        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-small-32.png', // 마커이미지의 주소입니다
+            imageSize = new kakao.maps.Size(size, size), // 마커이미지의 크기입니다
+            imageOption = {offset: new kakao.maps.Point(25, size)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
+        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+        return markerImage;
+    }
+}
+
+function resize() {
+    const position = currentCoords != null ? currentCoords : new kakao.maps.LatLng(37.54699, 127.09598);
+    const map_size = window.outerHeight - (document.getElementsByTagName("header")[0].offsetHeight + document.getElementById("marker_detail").offsetHeight);
+    document.getElementsByTagName("section")[0].style.height = map_size+"px";
+    map.relayout();
+    if(currentMarker == null){
+        map.setCenter(position);
+    }
+}
+
+function submit() {
+    const organization_name = document.getElementById("organization_name");
+    const owner_name = document.getElementById("owner_name");
+    const road_address = document.getElementById("road_address");
+    const address = document.getElementById("address");
+    const division = document.getElementById("division");
+    const company_code = document.getElementById("company_code");
+    const corporate_code = document.getElementById("corporate_code");
+    const total_capacity = document.getElementById("total_capacity");
+    const num1 = document.getElementById("num1");
+    const num2 = document.getElementById("num2");
+    const num3 = document.getElementById("num3");
+
+    let invalid_count = 0;
+
+    invalid_count = invalid_count + validationCheck(organization_name);
+    invalid_count = invalid_count + validationCheck(owner_name);
+    // invalid_count = invalid_count + validationCheck(road_address);
+    invalid_count = invalid_count + validationCheck(address);
+    invalid_count = invalid_count + validationCheck(total_capacity);
+    invalid_count = invalid_count + validationCheck(num1);
+    invalid_count = invalid_count + validationCheck(num2);
+    invalid_count = invalid_count + validationCheck(num3);
+
+    if(division.value == 0){
+        invalid_count = invalid_count + validationCheck(division);
+    }else if(division.value == 1){
+        invalid_count = invalid_count + validationCheck(company_code);
+    }else if(division.value == 2){
+        invalid_count = invalid_count + validationCheck(company_code);
+        invalid_count = invalid_count + validationCheck(corporate_code);
+    }else if(division.value == 3){
+        invalid_count = invalid_count + validationCheck(corporate_code);
+    }
+    if(invalid_count == 0){
+        const orgaData = new FormData();
+        orgaData.append("organization_name", organization_name.value);
+        orgaData.append("owner_name", owner_name.value);
+        orgaData.append("road_address", road_address.value);
+        orgaData.append("address", address.value);
+        orgaData.append("total_capacity", total_capacity.value);
+        orgaData.append("division", division.value);
+        orgaData.append("tel_number", num1.value+"-"+num2.value+"-"+num3.value);
+        if(division.value == 1){
+            orgaData.append("company_code", company_code.value);
+        }else if(division.value == 2){
+            orgaData.append("company_code", company_code.value);
+            orgaData.append("corporate_code", corporate_code.value);
+        }else if(division.value == 3){
+            orgaData.append("corporate_code", corporate_code.value);
+        }
+        $.ajax({
+            type: "POST",
+            url: "/orgaRegistProc",
+            data: orgaData,
+            processData : false,
+            contentType : false,
+            success: function (data) {
+                if(data == 1) {
+                    location.href = "/login";
+                } else if(data == 0) {
+                    alert("error");
+                }
+            },
+            error: function (xhr,err){
+                alert("관리자에게 문의하세요.");
+            }
+        });
+    }
+}
+
+function switchModify(division) {
+    if(division == 1){
+        const del = document.getElementById("btn_ctrl");
+        while(del.firstChild) {
+            del.removeChild(del.firstChild);
+        }
+        $("#btn_ctrl").append(
+            '<button class="btn btn-warning" type="button" onclick="modify();">수정</button>'
+            +'<button class="btn btn-danger" type="button" onclick="delete();">삭제</button>'
+            +'<button class="btn btn-secondary right" type="button" onclick="switchModify(2);">취소</button>'
+        );
+        state = 1;
+    }else if(division == 2){
+        const del = document.getElementById("btn_ctrl");
+        while(del.firstChild) {
+            del.removeChild(del.firstChild);
+        }
+        $("#btn_ctrl").append(
+            '<button class="btn btn-secondary right" type="button" onclick="switchModify(1);">재수정</button>'
+        );
+        state = 0;
+    }
+
+}
+
+function modify() {
+    const id = document.getElementById("id");
+    const location_x = document.getElementById("location_x");
+    const location_y = document.getElementById("location_y");
+    const organization_name = document.getElementById("organization_name");
+    const owner_name = document.getElementById("owner_name");
+    const road_address = document.getElementById("road_address");
+    const address = document.getElementById("address");
+    const division = document.getElementById("division");
+    const company_code = document.getElementById("company_code");
+    const corporate_code = document.getElementById("corporate_code");
+    const total_capacity = document.getElementById("total_capacity");
+    const num1 = document.getElementById("num1");
+    const num2 = document.getElementById("num2");
+    const num3 = document.getElementById("num3");
+
+    let invalid_count = 0;
+
+    invalid_count = invalid_count + validationCheck(organization_name);
+    invalid_count = invalid_count + validationCheck(owner_name);
+    // invalid_count = invalid_count + validationCheck(road_address);
+    invalid_count = invalid_count + validationCheck(address);
+    invalid_count = invalid_count + validationCheck(total_capacity);
+    invalid_count = invalid_count + validationCheck(num1);
+    invalid_count = invalid_count + validationCheck(num2);
+    invalid_count = invalid_count + validationCheck(num3);
+
+    if(division.value == 0){
+        invalid_count = invalid_count + validationCheck(division);
+    }else if(division.value == 1){
+        invalid_count = invalid_count + validationCheck(company_code);
+    }else if(division.value == 2){
+        invalid_count = invalid_count + validationCheck(company_code);
+        invalid_count = invalid_count + validationCheck(corporate_code);
+    }else if(division.value == 3){
+        invalid_count = invalid_count + validationCheck(corporate_code);
+    }
+    if(invalid_count == 0){
+        const orgaData = new FormData();
+        orgaData.append("id", id.value);
+        orgaData.append("location_x", location_x.value);
+        orgaData.append("location_y", location_y.value);
+        orgaData.append("organization_name", organization_name.value);
+        orgaData.append("owner_name", owner_name.value);
+        orgaData.append("road_address", road_address.value);
+        orgaData.append("address", address.value);
+        orgaData.append("total_capacity", total_capacity.value);
+        orgaData.append("division", division.value);
+        orgaData.append("tel_number", num1.value+"-"+num2.value+"-"+num3.value);
+        if(division.value == 1){
+            orgaData.append("company_code", company_code.value);
+        }else if(division.value == 2){
+            orgaData.append("company_code", company_code.value);
+            orgaData.append("corporate_code", corporate_code.value);
+        }else if(division.value == 3){
+            orgaData.append("corporate_code", corporate_code.value);
+        }
+        $.ajax({
+            type: "POST",
+            url: "/orgaModifyProc",
+            data: orgaData,
+            processData : false,
+            contentType : false,
+            success: function (data) {
+                if(data == 1) {
+                    location.href = "/orga_list";
+                } else if(data == 0) {
+                    alert("error");
+                }
+            },
+            error: function (xhr,err){
+                alert("관리자에게 문의하세요.");
+            }
+        });
+    }
+}
+
+function focusOut(element) {
+    const id = element.id;
+    if(id == "company_code" || id == "corporate_code"){
+        ajaxCheck(element);
+    }else{
+        validationCheck(element);
+    }
+}
+
+function ajaxCheck(element) {
+    const value = element.value;
+    const url = "/check"+element.id;
+    const submit_data = element.id +"="+value;
+    if(value.length > 0){
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: submit_data,
+            dataType:"json",
+            success: function (data) {
+                if(data == 1) {
+                    element.classList.remove("is-invalid");
+                    element.classList.add("is-valid");
+                } else if(data == 0) {
+                    element.classList.remove("is-valid");
+                    element.classList.add("is-invalid");
+                    // invalidFeedBack(element, 2);
+                }
+            },
+            error: function (xhr,err){
+                alert("관리자에게 문의하세요.");
+            }
+        });
+    }else{
+        element.classList.add("is-invalid");
+        element.classList.remove("is-valid");
+        // invalidFeedBack(element, 1);
+    }
+}
+
+function validationCheck(element) {
+    const value = element.value;
+    const length = element.value.length;
+    const id = element.id;
+    const classList = element.classList;
+    if(value == "" || value == null){
+        classList.add("is-invalid");
+        classList.remove("is-valid");
+        // invalidFeedBack(element, 1);
+        return 1;
+    }else if(value == 0 && id == "division") {
+        classList.add("is-invalid");
+        classList.remove("is-valid");
+        return 1;
+    }else if(value < 1 && id == "total_capacity") {
+        classList.add("is-invalid");
+        classList.remove("is-valid");
+        // invalidFeedBack(element, 3);
+        return 1;
+    }else if((length != 2 && length != 3) && id == "num1") {
+        console.log(2345234);
+        classList.add("is-invalid");
+        classList.remove("is-valid");
+        // invalidFeedBack(element, 3);
+        return 1;
+    }else if((length != 3 && length != 4) && id == "num2") {
+        console.log(2345234);
+        classList.add("is-invalid");
+        classList.remove("is-valid");
+        // invalidFeedBack(element, 3);
+        return 1;
+    }else if((length != 4) && id == "num3") {
+        console.log(2345234);
+        classList.add("is-invalid");
+        classList.remove("is-valid");
+        // invalidFeedBack(element, 3);
+        return 1;
+    }else {
+        classList.remove("is-invalid");
+        return 0;
+    }
+}
+
+function invalidFeedBack(element, division) {
+    if(division == 1){
+        element.nextSibling.nextSibling.innerHTML = "필수 정보 입니다.";
+    }else if(division == 2){
+        element.nextSibling.nextSibling.innerHTML = "이미 사용중 입니다.";
+    }else if(division == 3){
+        element.nextSibling.nextSibling.innerHTML = "잘 못된 형식 입니다.";
+    }
 }
 </script>
 <body>
@@ -581,6 +1054,7 @@ function selectBoxControl(value) {
                 <a class="navbar-brand" href="#"><img th:src="@{/images/iconmonstr-user-circle-thin-240.png}"></a>
             </div>
             <div class="search">
+                <div class="icon" id="search_icon"><i class="fa fa-search"></i></div>
                 <input class="form-control mr-sm-2" type="text" id="keyword" placeholder="장소 검색">
             </div>
             <div class="burger">

@@ -1,5 +1,12 @@
 .none {display: none;}
-
+.icon{
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: right;
+    right: 32%;
+    color: #7b8a8b;
+}
 .profile {width: 10%; text-align: center;}
 .profile a {margin: 0;}
 .profile img {width: 24px; height: 24px;}
@@ -18,5 +25,6 @@
 .first {flex: 1; width:30%;}
 .second {flex: 1; margin: 0px 5%; width:30%;}
 .third {flex: 1; width:30%;}
-.detail_btn {margin: 10px 20px 20px; float: right; width: 27%;}
-.detail_btn button {width: 100%;}
+.detail_btn {margin: 10px 20px 20px; width: 50%; display: flex;}
+.detail_btn button {margin-right: 5px;}
+.detail_btn .right {float: right;}
