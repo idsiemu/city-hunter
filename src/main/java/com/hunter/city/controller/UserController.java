@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -89,6 +90,9 @@ public class UserController {
             user.setEmail(request.getParameter("email"));
             user.setRoles("CUSTOMER");
             organization.setOwnerName(request.getParameter("owner_name"));
+            Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+            organization.setCreateDate(timestamp);
+            organization.setUpdateDate(timestamp);
             int division = Integer.parseInt(request.getParameter("division"));
             organization.setDivision(division);
             if(division == 1){

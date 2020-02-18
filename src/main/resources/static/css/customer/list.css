@@ -1,0 +1,14 @@
+.profile {width: 10%; text-align: center;}
+.profile a {margin: 0;}
+.profile img {width: 24px; height: 24px;}
+
+.title {font-weight: 900; font-size: 22px; color: #f7f7f7}
+
+.list_info {padding: 10px 10px;}
+.list_row {display: flex;}
+.cell {padding: 3px; height: 40px; vertical-align: middle;}
+.col1 {width: 50%;}
+.col2 {width: 20%;}
+.col3 {width: 30%; text-align: right;}
+.col3 input {text-align: center;}
+.col3 button {width: 100%;}

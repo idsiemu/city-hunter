@@ -12,6 +12,7 @@ import java.sql.Timestamp;
 @Data //lombok
 @Entity //JPA -> ORM
 @NoArgsConstructor
+@org.hibernate.annotations.DynamicUpdate
 public class Organization {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,6 +59,8 @@ public class Organization {
     private int male; // 남자인원
 
     private int anonymous; // 구분불가인원
+
+    private int del_flag = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
