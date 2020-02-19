@@ -11,323 +11,232 @@
     <script th:src="@{/js/bootstrap.min.js}"></script>
 </head>
 <script>
+
+let hunterMarkers = new Array();
+
+let hunterData = new Map();
+
+let map = null;
+
+let currentMarker = null;
+
+let currentCoords = null;
+
+// 주소-좌표 변환 객체를 생성합니다
+const geocoder = new kakao.maps.services.Geocoder();
+
+// 장소 검색 객체를 생성합니다
+const places = new kakao.maps.services.Places();
+
 window.onload = function () {
-//****************************************************************************************************************
-// Init 시작
-// ***************************************************************************************************************
-    let hunterMarkers = [];
+    resize();
 
-    let searchMarks = [];
+    map = generateMap();
 
-    let map = generateMap();
+    window.onresize = function() {
+        resize();
+    };
 
-    const infowindow = new kakao.maps.InfoWindow({zIndex:1});
-
-    // 주소-좌표 변환 객체를 생성합니다
-    const geocoder = new kakao.maps.services.Geocoder();
-
-    // 장소 검색 객체를 생성합니다
-    const ps = new kakao.maps.services.Places();
-//****************************************************************************************************************
-// Init 끝
-// ***************************************************************************************************************
-//****************************************************************************************************************
-// Action 시작
-// ***************************************************************************************************************
-    $('#keyword').on('keydown', function(e) {
-        var keyCode = e.which;
-        if (keyCode === 13) { // Enter Key
-            searchMarks = [];
-            // 키워드로 장소를 검색합니다
-            ps.keywordSearch(document.getElementById("keyword").value, placesSearchCB);
-
-            // 주소로 좌표를 검색합니다
-            geocoder.addressSearch(document.getElementById("keyword").value, function(result, status) {
-                // 정상적으로 검색이 완료됐으면
-                if (status === kakao.maps.services.Status.OK) {
-                    const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-                    // 결과값으로 받은 위치를 마커로 표시합니다
-                    searchMarks.push(generateMarkerByJuso(coords));
-                    // 인포윈도우로 장소에 대한 설명을 표시합니다
-                    // var infowindow = new kakao.maps.InfoWindow({
-                    //     content: '<div style="width:150px;text-align:center;padding:6px 0;">우리회사</div>'
-                    // });
-                    // infowindow.open(map, marker);
-
-                    // 지도의 중심을 결과값으로 받은 위치로 이동시킵니다
-                    map.setCenter(coords);
-                }
-            });
+    kakao.maps.event.addListener(map, 'click', function (e) {
+        if(currentMarker != null){
+            currentMarker.setImage(markerImage(32));
+            currentMarker = null;
+            currentCoords = null;
         }
     });
+}
+function generateMap() {
+    // default 좌표
+    const position = new kakao.maps.LatLng(37.5546788388674, 126.970606917394)
+    // 지도를 표시할 div
+    const mapContainer = document.getElementById('map'),
+        mapOption = {
+            center: position, // 지도의 중심좌표
+            level: 14 // 지도의 확대 레벨
+        };
+    const map = new kakao.maps.Map(mapContainer, mapOption); // 지도를 생성합니다
+    map.setCenter(position);
+    map.relayout();
+    // 마커가 지도 위에 표시되도록 설정합니다
+    generateHunterMarker();
 
-    kakao.maps.event.addListener(map, 'click', function() {
-        for(let i=0;i<hunterMarkers.length;i++){
-            console.log(0);
-            hunterMarkers[i].setImage(markerImage());
-        }
-        console.log(searchMarks.length);
-        for(let i=0;searchMarks.length;i++){
-            console.log(searchMarks);
-            searchMarks[i].setImage(markerImage());
-        }
-    });
-//****************************************************************************************************************
-// Action 끝
-// ***************************************************************************************************************
-    function generateMap() {
-        // map tag 생성
-        const cell = document.getElementById("control_map");
-        while ( cell.hasChildNodes() ) { cell.removeChild( cell.firstChild ); }
-        const div = document.createElement("div");
-        div.id = "map";
-        div.style.width = "100%";
-        div.style.height = "400px";
-        document.getElementById('control_map').appendChild(div);
+    return map;
+}
 
-        // 지도를 표시할 div
-        const mapContainer = document.getElementById('map'),
-            mapOption = {
-                center: new kakao.maps.LatLng(37.54699, 127.09598), // 지도의 중심좌표
-                level: 20 // 지도의 확대 레벨
-            };
-
-        const map = new kakao.maps.Map(mapContainer, mapOption); // 지도를 생성합니다
-
-        // 마커가 지도 위에 표시되도록 설정합니다
-        const marker = generateHunterMarker();
-        marker.setMap(map)
-        hunterMarkers.push(marker);
-
-        return map;
+function reset() {
+    if(currentMarker != null){
+        currentMarker.setImage(markerImage());
     }
-    function generateHunterMarker(){
-        let markerPosition = new kakao.maps.LatLng(37.54699, 127.09598); // 마커가 표시될 위치입니다
+    currentMarker = null;
+    currentCoords = null;
+}
 
-        // 마커를 생성합니다
-        let marker = new kakao.maps.Marker({
-            // map,
-            position: markerPosition,
-            image: markerImage() // 마커이미지 설정
-        });
-
-        // 마커에 클릭이벤트를 등록합니다
-        // 마커에 mouseover 이벤트를 등록합니다
-        kakao.maps.event.addListener(marker, 'mouseover', function() {
-            marker.setImage(markerImage(42));
-        });
-
-        // 마커에 mouseout 이벤트를 등록합니다
-        kakao.maps.event.addListener(marker, 'mouseout', function() {
-            marker.setImage(markerImage());
-        });
-
-        // 마커에 click 이벤트를 등록합니다
-        kakao.maps.event.addListener(marker, 'click', function() {
-            marker.setImage(markerImage(42));
-            // 마커가 드래그 가능하도록 설정합니다
-            marker.setDraggable(true);
-        });
-
-        return marker;
-    }
-    function generateMarkerByClick(place){
-        let markerPosition = null;
-        if(place === null || place ===undefined){
-            markerPosition = new kakao.maps.LatLng(37.54699, 127.09598); // 마커가 표시될 위치입니다
-        }else {
-            markerPosition = new kakao.maps.LatLng(place.x, place.y);
-        }
-
-        // 마커를 생성합니다
-        let marker = new kakao.maps.Marker({
-            // map,
-            position: markerPosition,
-            image: markerImage() // 마커이미지 설정
-        });
-
-        // 마커가 드래그 가능하도록 설정합니다
-        marker.setDraggable(true);
-
-        // 마커에 클릭이벤트를 등록합니다
-        markerClick(marker, place);
-
-        return marker;
-    }
-
-    function generateMarkerByJuso(coords){
-        let markerPosition = null;
-        if(coords !== null){
-
-            // 마커를 생성합니다
-            let marker = new kakao.maps.Marker({
-                map,
-                position: coords,
-                image: markerImage() // 마커이미지 설정
-            });
-
-            // 마커가 드래그 가능하도록 설정합니다
-            marker.setDraggable(true);
-
-            // 마커에 클릭이벤트를 등록합니다
-            kakao.maps.event.addListener(marker, 'click', function() {
-                // 마커를 클릭하면 장소명이 인포윈도우에 표출됩니다
-                infowindow.setContent('<div style="font-size:12px;">' + place.place_name + '</div>');
-                infowindow.open(map, marker);
-            });
-            const result = geocoder.coord2Address(coords.getLng(), coords.getLat(), function (result, status) {
-                if (status === kakao.maps.services.Status.OK) {
-                    var detailAddr = !!result[0].road_address ? '<div>도로명주소 : ' + result[0].road_address.address_name + '</div>' : '';
-                    detailAddr += '<div>지번 주소 : ' + result[0].address.address_name + '</div>';
-                    console.log(detailAddr);
-                }
-            });
-
-            // 마커에 클릭이벤트를 등록합니다
-            // 마커에 mouseover 이벤트를 등록합니다
-            kakao.maps.event.addListener(marker, 'mouseover', function() {
-                marker.setImage(markerImage(42));
-            });
-
-            // 마커에 mouseout 이벤트를 등록합니다
-            kakao.maps.event.addListener(marker, 'mouseout', function() {
-                marker.setImage(markerImage());
-            });
-
-            // 마커에 click 이벤트를 등록합니다
-            kakao.maps.event.addListener(marker, 'click', function() {
-                marker.setImage(markerImage(42));
-                // 마커가 드래그 가능하도록 설정합니다
-                marker.setDraggable(true);
-            });
-            return marker;
-        }else {
-            return;
-        }
-
-
-    }
-
-    function generateMarkerByKeyWord(place){
-        let markerPosition = null;
-        if(place !== null){
-            markerPosition = new kakao.maps.LatLng(place.y, place.x);
-
-            // 마커를 생성합니다
-            let marker = new kakao.maps.Marker({
-                map,
-                position: markerPosition,
-                image: markerImage() // 마커이미지 설정
-            });
-
-            // 마커에 클릭이벤트를 등록합니다
-            // 마커에 mouseover 이벤트를 등록합니다
-            kakao.maps.event.addListener(marker, 'mouseover', function() {
-                marker.setImage(markerImage(42));
-            });
-
-            // 마커에 mouseout 이벤트를 등록합니다
-            kakao.maps.event.addListener(marker, 'mouseout', function() {
-                marker.setImage(markerImage());
-            });
-
-            // 마커에 click 이벤트를 등록합니다
-            kakao.maps.event.addListener(marker, 'click', function() {
-                marker.setImage(markerImage(42));
-                // 마커가 드래그 가능하도록 설정합니다
-                marker.setDraggable(true);
-            });
-            return marker;
-        }else {
-            return;
-        }
-    }
-
-    // 키워드 검색 완료 시 호출되는 콜백함수 입니다
-    function placesSearchCB (data, status, pagination) {
-        if (status === kakao.maps.services.Status.OK) {
-            // 검색된 장소 위치를 기준으로 지도 범위를 재설정하기위해
-            // LatLngBounds 객체에 좌표를 추가합니다
-            const bounds = new kakao.maps.LatLngBounds();
-
-            for (let i=0; i<data.length; i++) {
-                searchMarks.push(generateMarkerByKeyWord(data[i]));
-                bounds.extend(new kakao.maps.LatLng(data[i].y, data[i].x));
+async function getAllPlace() {
+    let hunting_place = null;
+    await $.ajax({
+        type: "POST",
+        url: "/getAllPlace",
+        success: function (data) {
+            if(data != null) {
+                hunting_place = data;
             }
+        },
+        error: function (xhr,err){
+            alert("관리자에게 문의하세요.");
+        }
+    });
+    return hunting_place;
+}
 
-            // 검색된 장소 위치를 기준으로 지도 범위를 재설정합니다
-            map.setBounds(bounds);
+function generateHunterMarker(){
+    getAllPlace().then(function(result) {
+        if(result != null){
+            result.forEach(function(place){
+                if((place.locationX != null && place.locationX != "")&& (place.locationY != null && place.locationY != "")){
+                    const markerPosition = new kakao.maps.LatLng(place.locationX, place.locationY); // 마커가 표시될 위치입니다
+                    // 마커를 생성합니다
+                    const marker = new kakao.maps.Marker({
+                        map,
+                        position: markerPosition,
+                        image: markerImage(32) // 마커이미지 설정
+                    });
+                    const div_id = "hunter_"+place.id;
+                    marker.setTitle(div_id);
+                    hunterData.set(div_id, place);
+
+                    addMarkerEventListener(marker);
+                    marker.setMap(map);
+                    hunterMarkers.push(marker);
+                }
+            });
         }
-    }
-    
-    function markerImage(size) {
-        if(size == null){
-            const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-red-full-32.png', // 마커이미지의 주소입니다
-                imageSize = new kakao.maps.Size(32, 32), // 마커이미지의 크기입니다
-                imageOption = {offset: new kakao.maps.Point(20, 32)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
-            // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
-            const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-            return markerImage;
-        } else {
-            const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-red-full-48.png', // 마커이미지의 주소입니다
-                imageSize = new kakao.maps.Size(size, size), // 마커이미지의 크기입니다
-                imageOption = {offset: new kakao.maps.Point(25, size)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
-            // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
-            const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-            return markerImage;
-        }
-    }
+    });
+}
+
+function markerImage(size) {
+    const makerSize = size == null ? 32 : size,
+        imageUrl = size == null ? 'http://127.0.0.1:8081/images/iconmonstr-location-small-blue-32.png' : size == 32 ? 'http://127.0.0.1:8081/images/iconmonstr-location-small-32.png' : 'http://127.0.0.1:8081/images/iconmonstr-location-big-48.png',
+        zoom = size == 42 ? 25 : 20,
+        imageSize = new kakao.maps.Size(makerSize, makerSize),
+        imageOption = {offset: new kakao.maps.Point(zoom, makerSize)},
+        markerImage = new kakao.maps.MarkerImage(imageUrl, imageSize, imageOption);
+    return markerImage;
+}
+
+function resize() {
+    const map_size = window.outerHeight - (document.getElementsByTagName("header")[0].offsetHeight + document.getElementById("marker_detail").offsetHeight);
+    document.getElementById("map").style.height = map_size+"px";
+}
+
+function addMarkerEventListener(marker) {
+    // 마커에 mouseover 이벤트를 등록합니다
+    kakao.maps.event.addListener(marker, 'mouseover', function() {
+        marker.setImage(markerImage(42));
+    });
+
+    // 마커에 mouseout 이벤트를 등록합니다
+    kakao.maps.event.addListener(marker, 'mouseout', function() {
+        marker.setImage(markerImage());
+    });
+
+    // 마커에 click 이벤트를 등록합니다
+    kakao.maps.event.addListener(marker, 'click', function() {
+        marker.setClickable(true);
+        marker.setImage(markerImage(42));
+        currentMarker = marker;
+        currentCoords = marker.getPosition();
+        displayData(marker.getTitle());
+        resize();
+        map.setCenter(currentCoords);
+        map.setLevel(6, {anchor: currentCoords});
+    });
+}
+
+function displayData(key) {
+    const value = hunterData.get(key);
+    appendChild();
+    console.log(value);
+    document.getElementsByName("tel_number")[0].setAttribute("href","tel:"+value.telNumber);
+    document.getElementsByName("tel_number")[1].setAttribute("href","tel:"+value.telNumber);
+    document.getElementsByName("tel_number")[1].innerText = value.telNumber;
+}
+
+function appendChild() {
+    $("#marker_detail").append(
+     '<div class="title">가게이름</div>'
+    +'<div class="icon">'
+    +'  <a name="tel_number"><img src="/images/main/iconmonstr-phone-1-32.png"></a>'
+    +'  <a><img th:src="@{/images/main/iconmonstr-copy-4-32.png}"></a>'
+    +'</div>'
+    +'<div class="content">'
+    +'  <div class="div_icon"><img th:src="@{/images/main/iconmonstr-location-1-24.png}"></div>'
+    +'  <div class="div_text">'
+    +'      <p id="road_address"></p>'
+    +'      <p id="address"></p>'
+    +'  </div>'
+    +'</div>'
+    +'<div class="content">'
+    +'  <div class="div_icon"><img th:src="@{/images/main/iconmonstr-time-2-24.png}"></div>'
+    +'  <div class="div_text">'
+    +'      <p>영업시간 <span id="state">영업중</span></p>'
+    +'      <p id="time">월~금 10:00 ~ 19:00</p>'
+    +'  </div>'
+    +'</div>'
+    +'<div class="content">'
+    +'  <div class="div_icon"><img th:src="@{/images/main/iconmonstr-user-6-24.png}"></div>'
+    +'  <div class="div_text">'
+    +'      <p id="total_capacity">수용인원 70명</p>'
+    +'      <p id="now_capacity">현재인원 20명</p>'
+    +'      <p id="female">여성 10명</p>'
+    +'      <p id="male">남성 20명</p>'
+    +'      <p id="ratio">여성비율 20%</p>'
+    +'  </div>'
+    +'</div>'
+    +'<div class="content">'
+    +'  <div class="div_icon">'
+    +'      <img th:src="@{/images/main/iconmonstr-phone-1-24.png}">'
+    +'  </div>'
+    +'  <div class="div_text">'
+    +'      <a name="tel_number"></a>'
+    +'  </div>'
+    +'</div>'
+    );
 }
 </script>
 <body>
 <div>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="profile">
-            <a class="navbar-brand" href="#"><img th:src="@{/images/iconmonstr-user-circle-thin-240.png}"></a>
-        </div>
-        <div class="search">
-            <input class="form-control mr-sm-2" type="text" id="keyword" placeholder="장소 검색">
-        </div>
-        <div class="burger">
-            <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-        </div>
-        <div class="navbar-collapse collapse" id="navbarColor02" style="">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Features</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Pricing</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">About</a>
-                </li>
-            </ul>
-        </div>
-    </nav>
-    <div id="control_map">
-<!--        <div id="map" style="width:100%;height:400px;">-->
-<!--        </div>-->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="profile">
+                <a class="navbar-brand" href="#"><img th:src="@{/images/iconmonstr-user-circle-thin-240.png}"></a>
+            </div>
+            <div class="search">
+                <input class="form-control mr-sm-2" type="text" id="keyword" placeholder="장소 검색">
+            </div>
+            <div class="burger">
+                <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+            <div class="navbar-collapse collapse" id="navbarColor02" style="">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Pricing</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">로그아웃</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <div class="map" id="map">
     </div>
-    <footer style="display: flex;">
-        <div class="footer_item">
-            <a>
-                <img th:src="@{/images/iconmonstr-bus-32.png}">
-            </a>
-        </div>
-        <div class="footer_item">
-            <a>
-                <img th:src="@{/images/iconmonstr-car-32.png}">
-            </a>
-        </div>
-        <div class="footer_item">
-            <a>
-                <img th:src="@{/images/iconmonstr-location-32.png}">
-            </a>
-        </div>
-    </footer>
+    <div id="marker_detail">
+    </div>
 </div>
 </body>
 </html>

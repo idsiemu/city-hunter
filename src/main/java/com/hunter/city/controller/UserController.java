@@ -67,14 +67,18 @@ public class UserController {
     }
 
     @PostMapping("signupProc")
-    public String signupProc(User user) {
-        String rawPassword = user.getPassword();
-        String encPassword = encoder.encode(rawPassword);
-        user.setPassword(encPassword);
-        user.setRoles("USER");
-
-        userRepository.save(user);
-        return "redirect:/login";
+    @ResponseBody
+    public int signupProc(User user) {
+        try {
+            String rawPassword = user.getPassword();
+            String encPassword = encoder.encode(rawPassword);
+            user.setPassword(encPassword);
+            user.setRoles("USER");
+            userRepository.save(user);
+            return 1;
+        }catch (Exception e){
+            return 0;
+        }
     }
 
     @PostMapping("signupGroupProc")

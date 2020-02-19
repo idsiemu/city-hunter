@@ -12,11 +12,12 @@
     <script th:src="@{/js/bootstrap.min.js}"></script>
 
 </head>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const param_id = [[ ${param.id} ]];
+    /*]]*/
+</script>
 <script>
-    /* <![CDATA[ */
-    var message = /*[[${param.id}]]*/ 'default';
-    console.log(message);
-    /* ]]> */
 
 let hunterMarkers = new Array();
 
@@ -193,7 +194,6 @@ window.onload = function () {
         }
     });
 }
-
 //****************************************************************************************************************
 // Action 끝
 // ***************************************************************************************************************
@@ -282,6 +282,19 @@ function generateHunterMarker(){
                     state = 1;
                 }
             });
+            if(param_id != null){
+                const div_id = "hunter_"+param_id;
+                for(let i=0;i<hunterMarkers.length;i++){
+                    if(div_id == hunterMarkers[i].getTitle()){
+                        currentMarker = hunterMarkers[i];
+                        currentCoords = hunterMarkers[i].getPosition();
+                        hunterMarkers[i].setImage(markerImage(42));
+                        displayData("hunter_"+param_id);
+                        return;
+                    }
+                }
+
+            }
             if(hunterMarkers.length != result.length){
                 //x, y축 좌표가 없으면 해당 데이터를 바로 띄워준다.
                 for (let [key, value] of hunterData) {
@@ -403,6 +416,15 @@ function generateMarkerByJuso (result, status) {
                         document.getElementById("road_address").value = result[i].address_name;
                         document.getElementById("road_address").style.display = "block";
                         document.getElementById("address").style.display = "none";
+                    }else if(result[i].address_type == "REGION_ADDR"){
+                        document.getElementById("road_address").value = result[i].road_address.address_name;
+                        document.getElementById("address").value = result[i].address_name;
+                        document.getElementById("road_address").style.display = "block";
+                        document.getElementById("address").style.display = "none";
+                    }else if(result[i].address_type == "ROAD_ADDR"){
+                        document.getElementById("road_address").value = result[i].address_name;
+                        document.getElementById("road_address").style.display = "block";
+                        document.getElementById("address").style.display = "none";
                     }
                 }
 
@@ -460,7 +482,16 @@ function addMarkerEventListener(marker) {
             // currentMarker.setDraggable(false);
         }
         if(state == 0){
-            displayData(marker.getTitle());
+            if(marker.getTitle().indexOf("hunter") != -1){
+                currentMarker = marker;
+                currentCoords = marker.getPosition();
+                marker.setImage(markerImage(42));
+                displayData(marker.getTitle());
+                map.setCenter(currentCoords);
+                return;
+            }else{
+                displayData(marker.getTitle());
+            }
         }else if(state == 1){
             let count = 0;
             searchMarks.forEach(function(marker){
@@ -474,7 +505,7 @@ function addMarkerEventListener(marker) {
                 currentMarker.setImage(markerImage());
             }
             const value = data.get(marker.getTitle());
-            const splitKey = key.split("_");
+            const splitKey = marker.getTitle().split("_");
             if (splitKey[0] == "keyword") {
                 document.getElementById("organization_name").value = value.place_name;
                 document.getElementById("road_address").value = value.road_address_name;
@@ -583,6 +614,8 @@ function displayData(key) {
             num3 = split_number[2];
         }
         appendDetail(key, 2);
+        document.getElementById("location_x").value = value.y;
+        document.getElementById("location_y").value = value.x;
         document.getElementById("organization_name").value = value.place_name;
         document.getElementById("road_address").value = value.road_address_name;
         document.getElementById("address").value = value.address_name;
@@ -600,6 +633,8 @@ function displayData(key) {
         const road_address = value.road_address == null ? null : value.road_address.address_name;
         const address = value.address.address_name;
         appendDetail(key, 2);
+        document.getElementById("location_x").value = value.y;
+        document.getElementById("location_y").value = value.x;
         document.getElementById("road_address").value = road_address;
         document.getElementById("address").value = address;
         if(value.road_address == null || value.road_address == ""){
@@ -656,7 +691,7 @@ function appendDetail(key, division) {
             (
                 state == 1 ?
                     '<button class="btn btn-warning" type="button" onclick="modify();">수정</button>'
-                    +'<button class="btn btn-danger" type="button" onclick="delete();">삭제</button>'
+                    +'<button class="btn btn-danger" type="button" onclick="delData();">삭제</button>'
                     +'<button class="btn btn-secondary right" type="button" onclick="switchModify(2);">취소</button>'
                     : '<button class="btn btn-info right" type="button" onclick="switchModify(1);">재수정</button>'
                     +'<button class="btn btn-secondary right" type="button" onclick="cancel('+ key +');">취소</button>'
@@ -714,38 +749,25 @@ function selectBoxControl(value) {
 }
 
 function markerImage(size) {
-    if(size == null){
-        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-small-blue-32.png', // 마커이미지의 주소입니다
-            imageSize = new kakao.maps.Size(32, 32), // 마커이미지의 크기입니다
-            imageOption = {offset: new kakao.maps.Point(20, 32)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
-        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
-        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-        return markerImage;
-    } else if(size == 42){
-        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-big-48.png', // 마커이미지의 주소입니다
-            imageSize = new kakao.maps.Size(size, size), // 마커이미지의 크기입니다
-            imageOption = {offset: new kakao.maps.Point(25, size)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
-        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
-        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-        return markerImage;
-    } else if(size == 32){
-        const imageSrc = 'http://127.0.0.1:8081/images/iconmonstr-location-small-32.png', // 마커이미지의 주소입니다
-            imageSize = new kakao.maps.Size(size, size), // 마커이미지의 크기입니다
-            imageOption = {offset: new kakao.maps.Point(20, size)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
-        // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
-        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-        return markerImage;
-    }
+    const makerSize = size == null ? 32 : size,
+        imageUrl = size == null ? 'http://127.0.0.1:8081/images/iconmonstr-location-small-blue-32.png' : size == 32 ? 'http://127.0.0.1:8081/images/iconmonstr-location-small-32.png' : 'http://127.0.0.1:8081/images/iconmonstr-location-big-48.png',
+        zoom = size == 42 ? 25 : 20,
+        imageSize = new kakao.maps.Size(makerSize, makerSize),
+        imageOption = {offset: new kakao.maps.Point(zoom, makerSize)},
+        markerImage = new kakao.maps.MarkerImage(imageUrl, imageSize, imageOption);
+    return markerImage;
 }
 
 function resize() {
     const position = currentCoords != null ? currentCoords : new kakao.maps.LatLng(37.54699, 127.09598);
     const map_size = window.outerHeight - (document.getElementsByTagName("header")[0].offsetHeight + document.getElementById("marker_detail").offsetHeight);
-    document.getElementsByTagName("section")[0].style.height = map_size+"px";
+    document.getElementById("map").style.height = map_size+"px";
     map.relayout();
     if(currentMarker == null){
         map.setCenter(position);
     }else if(currentMarker != null && currentMarker.getTitle().indexOf("click") != -1){
+        map.setCenter(position);
+    }else if(currentMarker != null && param_id != null){
         map.setCenter(position);
     }
 }
@@ -845,6 +867,7 @@ function cancel(key) {
 }
 
 function switchModify(division) {
+    const key = "hunter_" + document.getElementById("id").value;
     if(division == 1){
         const del = document.getElementById("btn_ctrl");
         while(del.firstChild) {
@@ -852,7 +875,7 @@ function switchModify(division) {
         }
         $("#btn_ctrl").append(
             '<button class="btn btn-warning" type="button" onclick="modify();">수정</button>'
-            +'<button class="btn btn-danger" type="button" onclick="delete();">삭제</button>'
+            +'<button class="btn btn-danger" type="button" onclick="delData();">삭제</button>'
             +'<button class="btn btn-secondary right" type="button" onclick="switchModify(2);">취소</button>'
         );
         state = 1;
@@ -862,7 +885,6 @@ function switchModify(division) {
         while(del.firstChild) {
             del.removeChild(del.firstChild);
         }
-        const key = "hunter_" + document.getElementById("id").value;
         $("#btn_ctrl").append(
             '<button class="btn btn-info right" type="button" onclick="switchModify(1);">재수정</button>'
             +'<button class="btn btn-secondary right" type="button" onclick="cancel('+ key +');">취소</button>'
@@ -951,6 +973,43 @@ function modify() {
                 alert("관리자에게 문의하세요.");
             }
         });
+    }
+}
+
+function delData() {
+    const id = document.getElementById("id").value;
+    if(id != null || id != ""){
+        if(confirm("정말로 삭제 하시겠습니까?")){
+            $.ajax({
+                type: "POST",
+                url: "delData",
+                data: "id="+id,
+                dataType:"json",
+                success: function (data) {
+                    if(data == 1) {
+                        const div_id = "hunter_"+id;
+                        const del = document.getElementById(div_id);
+                        while(del.firstChild) {
+                            del.removeChild(del.firstChild);
+                        }
+                        for(let i=0;i<hunterMarkers.length;i++){
+                            if(hunterMarkers[i].getTitle() == div_id){
+                                currentMarker.setMap(null);
+                                hunterMarkers.splice(i, 1);
+                                currentMarker = null;
+                                currentCoords = null;
+                                resize();
+                            }
+                        }
+                    }else if(data == 0) {
+                        location.href = "/login";
+                    }
+                },
+                error: function (xhr,err){
+                    alert("관리자에게 문의하세요.");
+                }
+            });
+        }
     }
 }
 
@@ -1069,20 +1128,18 @@ function invalidFeedBack(element, division) {
                     <li class="nav-item">
                         <a class="nav-link" href="/orga_list">가게 목록</a>
                     </li>
-<!--                    <li class="nav-item">-->
-<!--                        <a class="nav-link" href="#">Pricing</a>-->
-<!--                    </li>-->
                     <li class="nav-item">
                         <a class="nav-link" href="#">프로필</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">로그아웃</a>
                     </li>
                 </ul>
             </div>
         </nav>
     </header>
-    <section>
-        <div class="map" id="map">
-        </div>
-    </section>
+    <div class="map" id="map">
+    </div>
     <div id="marker_detail">
     </div>
 </div>

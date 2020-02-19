@@ -54,7 +54,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .and()
                 .formLogin()
                 .loginPage("/login")
-                .and();
+                .and()
+                .logout()
+                .logoutUrl("/logout").logoutSuccessUrl("/login").invalidateHttpSession(true).deleteCookies("Authorization");
     }
 
     @Bean

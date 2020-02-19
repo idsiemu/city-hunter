@@ -8,11 +8,21 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}">
     <link rel="stylesheet" type="text/css" th:href="@{/css/customer/list.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/jquery.timepicker.css}">
+
     <script th:src="@{/js/bootstrap.min.js}"></script>
+    <script th:src="@{/js/jquery.timepicker.min.js}"></script>
 </head>
 <script>
+    window.onload = function () {
+        $('.time').timepicker();
+    }
     function setPeople(id) {
         if(id != null || id != ""){
+            const start_time = document.getElementById("start_time_"+id).value;
+            const finish_time = document.getElementById("finish_time_"+id).value;
+            if(compareTime(start_time, finish_time, id) > 0) {return;}
+
             const now_capacity = document.getElementById("now_capacity_"+id).value;
             const female = document.getElementById("female_"+id).value;
             const male = document.getElementById("male_"+id).value;
@@ -26,6 +36,8 @@
             }
             const data = new FormData();
             data.append("id", id);
+            data.append("start_time", start_time);
+            data.append("finish_time", finish_time);
             data.append("now_capacity", now_capacity);
             data.append("female", female);
             data.append("male", male);
@@ -73,6 +85,58 @@
         }
     }
 
+    function compareTime(start, finish, id) {
+        let start_isInvalid = 0;
+        let finish_isInvalid = 0;
+        let isInvalid = 0;
+        if((start != null && finish != null) && (start != "" && finish != "")){
+            if(start.indexOf("am") != -1 || start.indexOf("pm") != -1){
+                const replace_time = start.replace("am","");
+                const split_time = replace_time.split(":");
+                if(isNumeric(split_time[0]) && isNumeric(split_time[1])){
+                    if(!((split_time[0].length == 2 || split_time[0].length == 1) && split_time[1].length == 2)){
+                        start_isInvalid++
+                    }
+                }else{
+                    start_isInvalid++;
+                }
+            }else{
+                start_isInvalid++;
+            }
+            if(finish.indexOf("am") != -1 || finish.indexOf("pm") != -1){
+                const replace_time = finish.replace("am","");
+                const split_time = replace_time.split(":");
+                if(isNumeric(split_time[0]) && isNumeric(split_time[1])){
+                    if(!((split_time[0].length == 2 || split_time[0].length == 1) && split_time[1].length == 2)){
+                        finish_isInvalid++
+                    }
+                }else{
+                    finish_isInvalid++;
+                }
+            }else{
+                finish_isInvalid++;
+            }
+        }else{
+            isInvalid++;
+        }
+        if(start_isInvalid > 0){
+            document.getElementById("start_time_"+id).classList.add("is-invalid");
+        }else{
+            document.getElementById("start_time_"+id).classList.remove("is-invalid");
+        }
+        if(finish_isInvalid > 0){
+            document.getElementById("finish_time_"+id).classList.add("is-invalid");
+        }else{
+            document.getElementById("finish_time_"+id).classList.remove("is-invalid");
+        }
+        isInvalid = isInvalid + finish_isInvalid + start_isInvalid;
+        return isInvalid;
+    }
+
+    function isNumeric(value){
+        return !isNaN(Number(value));
+    }
+
     function modify(id) {
         location.href="/customer?id="+id;
     }
@@ -100,6 +164,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#">프로필</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">로그아웃</a>
+                    </li>
                 </ul>
             </div>
         </nav>
@@ -108,6 +175,11 @@
         <div th:each="list : ${list}" class="list_info" th:id="${list.id}">
             <input type="hidden" th:value="${list.id}">
             <h4 th:text="${list.organizationName}"></h4>
+            <div class="list_row">
+                <span class="cell col1">영업시간</span>
+                <span class="cell col2"><input type="text" class="form-control time" th:id="'start_time_'+${list.id}" th:value="${list.startTime}"></span>
+                <span class="cell col3"><input type="text" class="form-control time" th:id="'finish_time_'+${list.id}" th:value="${list.finishTime}"></span>
+            </div>
             <div class="list_row">
                 <span class="cell col1">수용인원</span>
                 <span class="cell col2"></span>
@@ -148,6 +220,9 @@
                 <span class="cell col3"><button class="btn btn-info" th:onclick="setPeople([[${list.id}]])">적용</button></span>
             </div>
             <hr>
+        </div>
+        <div class="add_btn">
+            <button class="btn btn-success" onclick="location.href='/customer'">등록</button>
         </div>
     </section>
 </div>

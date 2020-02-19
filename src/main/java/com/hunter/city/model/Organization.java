@@ -60,7 +60,14 @@ public class Organization {
 
     private int anonymous; // 구분불가인원
 
-    private int del_flag = 0;
+    @Column(name = "del_flag")
+    private int delFlag = 0;
+
+    @Column(name = "start_time")
+    private String startTime;
+
+    @Column(name = "finish_time")
+    private String finishTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

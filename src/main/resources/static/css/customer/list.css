@@ -7,8 +7,12 @@
 .list_info {padding: 10px 10px;}
 .list_row {display: flex;}
 .cell {padding: 3px; height: 40px; vertical-align: middle;}
-.col1 {width: 50%;}
-.col2 {width: 20%;}
+.col1 {width: 40%;}
+.col2 {width: 30%;}
+.col2 input {text-align: center;}
 .col3 {width: 30%; text-align: right;}
 .col3 input {text-align: center;}
 .col3 button {width: 100%;}
+
+.add_btn {text-align: center; width: 100%; margin-bottom: 20px;}
+.add_btn button {width: 50%;}

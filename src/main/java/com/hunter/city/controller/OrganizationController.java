@@ -55,16 +55,30 @@ public class OrganizationController {
         }
     }
 
+    @PostMapping("/getAllPlace")
+    @ResponseBody
+    public List<Organization> getAllPlace() {
+        try {
+            List<Organization> list = organizationRepository.findAll();
+            return list;
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     @PostMapping("/setPeople")
     @ResponseBody
     public int setPeople(HttpServletRequest request) {
         try {
             int id = Integer.parseInt(request.getParameter("id"));
+            String start_time = request.getParameter("start_time");
+            String finish_time = request.getParameter("finish_time");
             int now_capacity = Integer.parseInt(request.getParameter("now_capacity"));
             int female = Integer.parseInt(request.getParameter("female"));
             int male = Integer.parseInt(request.getParameter("male"));
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-            organizationRepository.updatePeople(id, now_capacity, female, male, timestamp);
+            organizationRepository.updatePeople(id, start_time, finish_time, now_capacity, female, male, timestamp);
             return 1;
         }catch (Exception e){
             e.printStackTrace();
@@ -85,6 +99,24 @@ public class OrganizationController {
         }
     }
 
+    @PostMapping("/checkcompany_code")
+    @ResponseBody
+    public int checkcompany_code(int company_code) {
+        if(organizationRepository.countByCompanyCode(company_code) > 0){
+            return 0;
+        }
+        return 1;
+    }
+
+    @PostMapping("/checkcorporate_code")
+    @ResponseBody
+    public int checkcorporate_code(int corporate_code) {
+        if(organizationRepository.countByCorporateCode(corporate_code) > 0){
+            return 0;
+        }
+        return 1;
+    }
+
     @RequestMapping(value = "/orga_list")
     public String orgaList(HttpServletRequest request, Model model) {
         try {
@@ -98,7 +130,6 @@ public class OrganizationController {
                         .verify(token)
                         .getSubject();
             }
-//            List<Organization> list = userRepository.findByUsername(username).getOrganization();
             int user_id = userRepository.findByUsername(username).getId();
             List<Organization> list = organizationRepository.selectOrganization(user_id);
             model.addAttribute("list", list);
