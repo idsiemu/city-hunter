@@ -74,11 +74,12 @@ public class OrganizationController {
             int id = Integer.parseInt(request.getParameter("id"));
             String start_time = request.getParameter("start_time");
             String finish_time = request.getParameter("finish_time");
+            String work_day = request.getParameter("work_day");
             int now_capacity = Integer.parseInt(request.getParameter("now_capacity"));
             int female = Integer.parseInt(request.getParameter("female"));
             int male = Integer.parseInt(request.getParameter("male"));
             Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-            organizationRepository.updatePeople(id, start_time, finish_time, now_capacity, female, male, timestamp);
+            organizationRepository.updatePeople(id, start_time, finish_time, work_day, now_capacity, female, male, timestamp);
             return 1;
         }catch (Exception e){
             e.printStackTrace();

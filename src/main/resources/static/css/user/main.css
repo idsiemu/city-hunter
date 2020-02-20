@@ -9,10 +9,12 @@
 
 #marker_detail {position: absolute; left: 0; bottom: 0; width: 100%; background-color: #FAFAFA;}
 
-.title {font-size: 20px; font-weight: bold;}
-.icon {display: flex;}
+.title {font-size: 20px; font-weight: bold; margin: 10px 10px 10px 10px;}
+.icon {display: flex; margin: 0px 10px;}
+.icon img {height: 32px;}
 .icon a:nth-child(n){margin: 10px 0px;}
 .icon a:nth-last-child(2n +1){margin: 10px 20px;}
-.content {display: flex; margin: 5px 0px;}
+.content {display: flex; margin: 5px 10px;}
+.content img {height: 24px;}
 .div_icon {width: 30px;}
 .div_text p {margin-bottom: 0px;}

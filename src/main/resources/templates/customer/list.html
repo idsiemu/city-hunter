@@ -16,9 +16,27 @@
 <script>
     window.onload = function () {
         $('.time').timepicker();
+        const week = document.getElementsByName("week");
+        for(let i=0;i<week.length;i++){
+            const work_day = document.getElementById("work_day").value;
+            if(work_day.indexOf(i) != -1){
+                console.log(i)
+                week[i].checked = true;
+            }else{
+                console.log(i)
+                week[i].checked = false;
+            }
+        }
     }
     function setPeople(id) {
         if(id != null || id != ""){
+            const week = document.getElementsByName("week");
+            let work_day = "";
+            for(let i=0;i<week.length;i++){
+                if(week[i].checked == true){
+                    work_day = work_day + week[i].value;
+                }
+            }
             const start_time = document.getElementById("start_time_"+id).value;
             const finish_time = document.getElementById("finish_time_"+id).value;
             if(compareTime(start_time, finish_time, id) > 0) {return;}
@@ -38,6 +56,7 @@
             data.append("id", id);
             data.append("start_time", start_time);
             data.append("finish_time", finish_time);
+            data.append("work_day", work_day);
             data.append("now_capacity", now_capacity);
             data.append("female", female);
             data.append("male", male);
@@ -174,11 +193,24 @@
     <section>
         <div th:each="list : ${list}" class="list_info" th:id="${list.id}">
             <input type="hidden" th:value="${list.id}">
+            <input type="hidden" id="work_day" th:value="${list.workDay}">
             <h4 th:text="${list.organizationName}"></h4>
             <div class="list_row">
                 <span class="cell col1">영업시간</span>
-                <span class="cell col2"><input type="text" class="form-control time" th:id="'start_time_'+${list.id}" th:value="${list.startTime}"></span>
+                <span class="cell col2"><input type="text" class="form-control time" th:id="'start_time_'+${list.id}" th:value="${list.startTime}"><strong>~</strong></span>
                 <span class="cell col3"><input type="text" class="form-control time" th:id="'finish_time_'+${list.id}" th:value="${list.finishTime}"></span>
+            </div>
+            <div class="list_row">
+                <span class="cell col1">영업요일</span>
+                <span class="cell col2 add">
+                    <span class="week"><input type="checkbox" name="week" value="0" checked="checked"><b>일</b></span>
+                    <span class="week"><input type="checkbox" name="week" value="1" checked="checked"><b>월</b></span>
+                    <span class="week"><input type="checkbox" name="week" value="2" checked="checked"><b>화</b></span>
+                    <span class="week"><input type="checkbox" name="week" value="3" checked="checked"><b>수</b></span>
+                    <span class="week"><input type="checkbox" name="week" value="4" checked="checked"><b>목</b></span>
+                    <span class="week"><input type="checkbox" name="week" value="5" checked="checked"><b>금</b></span>
+                    <span class="week"><input type="checkbox" name="week" value="6" checked="checked"><b>토</b></span>
+                </span>
             </div>
             <div class="list_row">
                 <span class="cell col1">수용인원</span>
@@ -214,9 +246,10 @@
             <div class="list_row">
                 <span class="cell col1">
                     <button class="btn btn-warning" th:onclick="modify([[${list.id}]])">수정</button>
+                </span>
+                <span class="cell col2">
                     <button class="btn btn-danger" th:onclick="delData([[${list.id}]])">삭제</button>
                 </span>
-                <span class="cell col2"></span>
                 <span class="cell col3"><button class="btn btn-info" th:onclick="setPeople([[${list.id}]])">적용</button></span>
             </div>
             <hr>

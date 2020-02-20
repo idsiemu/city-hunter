@@ -69,6 +69,9 @@ public class Organization {
     @Column(name = "finish_time")
     private String finishTime;
 
+    @Column(name = "work_day")
+    private String workDay;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @JsonBackReference

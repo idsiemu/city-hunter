@@ -40,6 +40,10 @@ window.onload = function () {
     kakao.maps.event.addListener(map, 'click', function (e) {
         if(currentMarker != null){
             currentMarker.setImage(markerImage(32));
+            $("#marker_detail").empty();
+            resize();
+            map.relayout();
+            map.setCenter(currentCoords);
             currentMarker = null;
             currentCoords = null;
         }
@@ -47,7 +51,7 @@ window.onload = function () {
 }
 function generateMap() {
     // default 좌표
-    const position = new kakao.maps.LatLng(37.5546788388674, 126.970606917394)
+    const position = new kakao.maps.LatLng(37.5546788388674, 126.970606917394);
     // 지도를 표시할 div
     const mapContainer = document.getElementById('map'),
         mapOption = {
@@ -141,49 +145,139 @@ function addMarkerEventListener(marker) {
 
     // 마커에 click 이벤트를 등록합니다
     kakao.maps.event.addListener(marker, 'click', function() {
-        marker.setClickable(true);
+        // marker.setClickable(true);
         marker.setImage(markerImage(42));
         currentMarker = marker;
         currentCoords = marker.getPosition();
         displayData(marker.getTitle());
         resize();
-        map.setCenter(currentCoords);
         map.setLevel(6, {anchor: currentCoords});
+        map.relayout();
+        map.setCenter(currentCoords);
     });
 }
 
 function displayData(key) {
     const value = hunterData.get(key);
-    appendChild();
     console.log(value);
+    appendChild();
+    document.getElementById("orga_name").innerHTML = value.organizationName;
     document.getElementsByName("tel_number")[0].setAttribute("href","tel:"+value.telNumber);
     document.getElementsByName("tel_number")[1].setAttribute("href","tel:"+value.telNumber);
-    document.getElementsByName("tel_number")[1].innerText = value.telNumber;
+    document.getElementsByName("tel_number")[1].innerHTML = value.telNumber;
+    document.getElementById("road_address").innerHTML = value.roadAddress;
+    document.getElementById("address").innerHTML = value.address;
+    const date = new Date();
+    const work_value = value.workDay;
+    let work_day = work_value.indexOf(date.getDay()) != -1 ? 0 : 1;
+    const now = Number(date.getHours())+(date.getMinutes()/60);
+    const start_time = value.startTime;
+    const finish_time = value.finishTime;
+    const start_hour = setHour(value.startTime);
+    const finish_hour = setHour(value.finishTime);
+    if(start_hour > finish_hour){
+        if(now < start_hour && now > finish_hour){
+            work_day++;
+        }
+    }else{
+        if(now < start_hour || now > finish_hour){
+            work_day++;
+        }
+    }
+    if(work_day > 0){
+        const state = document.getElementById("state");
+        state.innerHTML = "영업전";
+        state.style.color = "#ff6060";
+    }else {
+        const state = document.getElementById("state");
+        state.innerHTML = "영업중";
+        state.style.color = "#49a47b";
+    }
+    let yoil = "";
+    if(work_value.length == 7){
+        yoil = "매일";
+    }else if(work_value.length == 6){
+        for(let i=0;i<7;i++){
+            if(work_value.indexOf(i) == -1){
+                switch (i) {
+                    case 0: yoil = yoil+"일요일"; break;
+                    case 1: yoil = yoil+"월요일"; break;
+                    case 2: yoil = yoil+"화요일"; break;
+                    case 3: yoil = yoil+"수요일"; break;
+                    case 4: yoil = yoil+"목요일"; break;
+                    case 5: yoil = yoil+"금요일"; break;
+                    case 6: yoil = yoil+"토요일"; break;
+                }
+            }
+        }
+        yoil = yoil+" 휴무";
+    }else{
+        for(let i=0;i<7;i++){
+            if(work_value.indexOf(i) == -1){
+                switch (i) {
+                    case 0: yoil = yoil+"일"; break;
+                    case 1: yoil = yoil+"월"; break;
+                    case 2: yoil = yoil+"화"; break;
+                    case 3: yoil = yoil+"수"; break;
+                    case 4: yoil = yoil+"목"; break;
+                    case 5: yoil = yoil+"금"; break;
+                    case 6: yoil = yoil+"토"; break;
+                }
+            }
+        }
+        yoil = yoil+" 휴무";
+    }
+    document.getElementById("time").innerHTML = yoil + " " + start_time + "~" + finish_time;
+    document.getElementById("total_capacity").innerHTML = "수용인원 " + value.totalCapacity;
+    document.getElementById("now_capacity").innerHTML = "현재인원 " + value.nowCapacity;
+    const female = value.female;
+    const male = value.male;
+    document.getElementById("female").innerHTML = "여성 " + female;
+    document.getElementById("male").innerHTML = "남성 " + male;
+    if((female+male) != 0){
+        document.getElementById("ratio").innerHTML = "비율 " + (value.female/(value.female+value.male))*100;
+    }else {
+        document.getElementById("ratio").innerHTML = "비율 0%";
+    }
+}
+
+function setHour(param) {
+    if(param.indexOf("pm") != -1){
+        const exclude = param.replace("pm","");
+        const split = exclude.split(":");
+        const hour = (Number(split[0])+12) + (Number(split[1])/60);
+        return hour;
+    }else{
+        const exclude = param.replace("am","");
+        const split = exclude.split(":");
+        const hour = Number(split[0]) + (Number(split[1])/60);
+        return hour;
+    }
 }
 
 function appendChild() {
     $("#marker_detail").append(
-     '<div class="title">가게이름</div>'
+     '<div class="title" id="orga_name">가게이름</div>'
     +'<div class="icon">'
     +'  <a name="tel_number"><img src="/images/main/iconmonstr-phone-1-32.png"></a>'
-    +'  <a><img th:src="@{/images/main/iconmonstr-copy-4-32.png}"></a>'
+    +'  <a><img src="/images/main/iconmonstr-copy-4-32.png"></a>'
     +'</div>'
     +'<div class="content">'
-    +'  <div class="div_icon"><img th:src="@{/images/main/iconmonstr-location-1-24.png}"></div>'
+    +'  <div class="div_icon"><img src="/images/main/iconmonstr-location-1-24.png"></div>'
     +'  <div class="div_text">'
     +'      <p id="road_address"></p>'
     +'      <p id="address"></p>'
     +'  </div>'
     +'</div>'
     +'<div class="content">'
-    +'  <div class="div_icon"><img th:src="@{/images/main/iconmonstr-time-2-24.png}"></div>'
+    +'  <div class="div_icon"><img src="/images/main/iconmonstr-time-2-24.png"></div>'
     +'  <div class="div_text">'
     +'      <p>영업시간 <span id="state">영업중</span></p>'
     +'      <p id="time">월~금 10:00 ~ 19:00</p>'
     +'  </div>'
     +'</div>'
     +'<div class="content">'
-    +'  <div class="div_icon"><img th:src="@{/images/main/iconmonstr-user-6-24.png}"></div>'
+    +'  <div class="div_icon"><img src="/images/main/iconmonstr-user-6-24.png"></div>'
     +'  <div class="div_text">'
     +'      <p id="total_capacity">수용인원 70명</p>'
     +'      <p id="now_capacity">현재인원 20명</p>'
@@ -193,14 +287,13 @@ function appendChild() {
     +'  </div>'
     +'</div>'
     +'<div class="content">'
-    +'  <div class="div_icon">'
-    +'      <img th:src="@{/images/main/iconmonstr-phone-1-24.png}">'
-    +'  </div>'
+    +'  <div class="div_icon"><img src="/images/main/iconmonstr-phone-1-24.png"></div>'
     +'  <div class="div_text">'
-    +'      <a name="tel_number"></a>'
+    +'      <a name="tel_number">31324234</a>'
     +'  </div>'
     +'</div>'
     );
+
 }
 </script>
 <body>
@@ -221,12 +314,6 @@ function appendChild() {
             <div class="navbar-collapse collapse" id="navbarColor02" style="">
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Features</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Pricing</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="/logout">로그아웃</a>
                     </li>
                 </ul>
@@ -236,6 +323,41 @@ function appendChild() {
     <div class="map" id="map">
     </div>
     <div id="marker_detail">
+<!--        <div class="title">가게이름</div>-->
+<!--        <div class="icon">-->
+<!--            <a name="tel_number"><img src="/images/main/iconmonstr-phone-1-32.png"></a>-->
+<!--            <a><img src="/images/main/iconmonstr-copy-4-32.png"></a>-->
+<!--        </div>-->
+<!--        <div class="content">-->
+<!--        <div class="div_icon"><img src="/images/main/iconmonstr-location-1-24.png"></div>-->
+<!--        <div class="div_text">-->
+<!--            <p id="road_address"></p>-->
+<!--            <p id="address"></p>-->
+<!--        </div>-->
+<!--        </div>-->
+<!--        <div class="content">-->
+<!--            <div class="div_icon"><img src="/images/main/iconmonstr-time-2-24.png"></div>-->
+<!--            <div class="div_text">-->
+<!--                <p>영업시간 <span id="state">영업중</span></p>-->
+<!--                <p id="time">월~금 10:00 ~ 19:00</p>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="content">-->
+<!--            <div class="div_icon"><img src="/images/main/iconmonstr-user-6-24.png"></div>-->
+<!--            <div class="div_text">-->
+<!--                <p id="total_capacity">수용인원 70명</p>-->
+<!--                <p id="now_capacity">현재인원 20명</p>-->
+<!--                <p id="female">여성 10명</p>-->
+<!--                <p id="male">남성 20명</p>-->
+<!--                <p id="ratio">여성비율 20%</p>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="content">-->
+<!--            <div class="div_icon"><img src="/images/main/iconmonstr-phone-1-24.png"></div>-->
+<!--            <div class="div_text">-->
+<!--                  <a name="tel_number"></a>-->
+<!--            </div>-->
+<!--        </div>-->
     </div>
 </div>
 </body>

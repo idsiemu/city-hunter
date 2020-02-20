@@ -15,9 +15,17 @@ public interface OrganizationRepository extends JpaRepository<Organization, Inte
     @Modifying
     @Query
     (
-            value = "UPDATE organization SET start_time = :start_time, finish_time = :finish_time, now_capacity = :now_capacity, female = :female, male = :male, update_date = :update_date WHERE id = :id", nativeQuery = true
+            value = "UPDATE organization SET" +
+                    "  start_time = :start_time" +
+                    ", finish_time = :finish_time" +
+                    ", work_day = :work_day" +
+                    ", now_capacity = :now_capacity" +
+                    ", female = :female" +
+                    ", male = :male" +
+                    ", update_date = :update_date " +
+                    "WHERE id = :id", nativeQuery = true
     )
-    void updatePeople(@Param("id") int id, @Param("start_time") String start_time, @Param("finish_time") String finish_time, @Param("now_capacity") int now_capacity, @Param("female") int female, @Param("male") int male, @Param("update_date") Timestamp update_date);
+    void updatePeople(@Param("id") int id, @Param("start_time") String start_time, @Param("finish_time") String finish_time, @Param("work_day") String work_day, @Param("now_capacity") int now_capacity, @Param("female") int female, @Param("male") int male, @Param("update_date") Timestamp update_date);
 
     @Query(value = "SELECT * FROM organization WHERE user_id = ?1 AND del_flag = 0", nativeQuery = true)
     List<Organization> selectOrganization(int userId);
