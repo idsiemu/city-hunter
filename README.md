@@ -1,4 +1,4 @@
-# city-hunter
+# SpringBoot Project
 spring boot + jwt + jpa + thymeleaf
 
 - 해당 업장에 몇 명의 사람이있고 성비가 어떻게 되는지 알 수 있게 해주는 기능을 만들고자 함.
